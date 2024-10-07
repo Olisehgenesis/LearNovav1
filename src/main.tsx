@@ -12,6 +12,7 @@ import { Providers } from "./providers";
 import "./index.css";
 import "@coinbase/onchainkit/styles.css";
 import { baseSepolia } from "viem/chains";
+import Header from "./components/Header.tsx";
 
 globalThis.Buffer = Buffer;
 

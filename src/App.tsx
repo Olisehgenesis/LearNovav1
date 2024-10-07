@@ -1,48 +1,35 @@
+import React, { useState, useEffect } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+
 import { useAccount, useConnect, useDisconnect } from "wagmi";
 import Header from "./components/Header";
+import Home from "./apps/home";
+import QuizzApp from "./apps/quest/Index";
+import "./index.css";
 import ErrorBoundary from "./ErrorBoundary";
+import { genAI } from "./lib/genAI";
+import QuestBrowser from "./apps/QuestBrowser";
+import AttemptQuiz from "./apps/AttemptQuiz";
+
+import ChainContext from "./lib/chainContext";
 
 function App() {
-  const account = useAccount();
-  const { connectors, connect, status, error } = useConnect();
-  const { disconnect } = useDisconnect();
-
   return (
     <>
       <ErrorBoundary>
-        <div>
+        <div className="min-h-screen bg-gray-100">
           <Header />
-
-          <h2>Account</h2>
-
-          <div>
-            status: {account.status}
-            <br />
-            addresses: {JSON.stringify(account.addresses)}
-            <br />
-            chainId: {account.chainId}
-          </div>
-
-          {account.status === "connected" && (
-            <button type="button" onClick={() => disconnect()}>
-              Disconnect
-            </button>
-          )}
-        </div>
-
-        <div>
-          <h2>Connect</h2>
-          {connectors.map((connector) => (
-            <button
-              key={connector.uid}
-              onClick={() => connect({ connector })}
-              type="button"
-            >
-              {connector.name}
-            </button>
-          ))}
-          <div>{status}</div>
-          <div>{error?.message}</div>
+          <main className="container mx-auto px-4 py-8">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/create" element={<QuizzApp genAI={genAI} />} />
+              <Route path="/quests" element={<QuestBrowser />} />
+              <Route
+                path="/attempt-quiz/:id"
+                element={<AttemptQuiz genAI={genAI} />}
+              />
+            </Routes>
+          </main>
         </div>
       </ErrorBoundary>
     </>
