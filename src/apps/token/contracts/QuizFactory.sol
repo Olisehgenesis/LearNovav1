@@ -1,427 +1,216 @@
-[
-  {
-    "type": "constructor",
-    "inputs": [
-      {
-        "name": "_quizTokenAddress",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "attemptQuiz",
-    "inputs": [
-      {
-        "name": "_quizId",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "_won",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "createQuiz",
-    "inputs": [
-      {
-        "name": "_name",
-        "type": "string",
-        "internalType": "string"
-      },
-      {
-        "name": "_tokenReward",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "_takerLimit",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "_startDate",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "_endDate",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "emergencyWithdraw",
-    "inputs": [],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "hasAttempted",
-    "inputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "owner",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "quizCount",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "quizToken",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "contract IERC20"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "quizzes",
-    "inputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "owner",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "name",
-        "type": "string",
-        "internalType": "string"
-      },
-      {
-        "name": "tokenReward",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "totalTokens",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "takerLimit",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "takerCount",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "winnerCount",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "startDate",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "endDate",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "active",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "renounceOwnership",
-    "inputs": [],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "transferOwnership",
-    "inputs": [
-      {
-        "name": "newOwner",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "updateQuiz",
-    "inputs": [
-      {
-        "name": "_quizId",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "_newTokenReward",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "_newTakerLimit",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "_newStartDate",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "_newEndDate",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "withdrawRemainingTokens",
-    "inputs": [
-      {
-        "name": "_quizId",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "event",
-    "name": "OwnershipTransferred",
-    "inputs": [
-      {
-        "name": "previousOwner",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "newOwner",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "QuizAttempted",
-    "inputs": [
-      {
-        "name": "quizId",
-        "type": "uint256",
-        "indexed": true,
-        "internalType": "uint256"
-      },
-      {
-        "name": "taker",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "won",
-        "type": "bool",
-        "indexed": false,
-        "internalType": "bool"
-      },
-      {
-        "name": "reward",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "QuizCreated",
-    "inputs": [
-      {
-        "name": "quizId",
-        "type": "uint256",
-        "indexed": true,
-        "internalType": "uint256"
-      },
-      {
-        "name": "owner",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "name",
-        "type": "string",
-        "indexed": false,
-        "internalType": "string"
-      },
-      {
-        "name": "tokenReward",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "takerLimit",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "startDate",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "endDate",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "QuizUpdated",
-    "inputs": [
-      {
-        "name": "quizId",
-        "type": "uint256",
-        "indexed": true,
-        "internalType": "uint256"
-      },
-      {
-        "name": "tokenReward",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "takerLimit",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "startDate",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "endDate",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "error",
-    "name": "OwnableInvalidOwner",
-    "inputs": [
-      {
-        "name": "owner",
-        "type": "address",
-        "internalType": "address"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "OwnableUnauthorizedAccount",
-    "inputs": [
-      {
-        "name": "account",
-        "type": "address",
-        "internalType": "address"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "ReentrancyGuardReentrantCall",
-    "inputs": []
-  }
-]
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
+contract QuizFactory is Ownable, ReentrancyGuard {
+    IERC20 public immutable quizToken;
+
+    struct Quiz {
+        address owner;
+        string name;
+        uint256 tokenReward;
+        uint256 totalTokens;
+        uint256 takerLimit;
+        uint256 takerCount;
+        uint256 winnerCount;
+        uint256 startDate;
+        uint256 endDate;
+        bool active;
+    }
+
+    mapping(uint256 => Quiz) public quizzes;
+    mapping(uint256 => mapping(address => bool)) public hasAttempted;
+    uint256 public quizCount;
+
+    event QuizCreated(
+        uint256 indexed quizId,
+        address indexed owner,
+        string name,
+        uint256 tokenReward,
+        uint256 takerLimit,
+        uint256 startDate,
+        uint256 endDate
+    );
+    event QuizUpdated(
+        uint256 indexed quizId,
+        uint256 tokenReward,
+        uint256 takerLimit,
+        uint256 startDate,
+        uint256 endDate
+    );
+    event QuizAttempted(
+        uint256 indexed quizId,
+        address indexed taker,
+        bool won,
+        uint256 reward
+    );
+
+    constructor(address _quizTokenAddress) Ownable(msg.sender) {
+        quizToken = IERC20(_quizTokenAddress);
+    }
+
+    function createQuiz(
+        string memory _name,
+        uint256 _tokenReward,
+        uint256 _takerLimit,
+        uint256 _startDate,
+        uint256 _endDate
+    ) external nonReentrant {
+        require(_tokenReward > 0, "Token reward must be greater than 0");
+        require(_startDate < _endDate, "Start date must be before end date");
+        require(
+            _startDate > block.timestamp,
+            "Start date must be in the future"
+        );
+
+        uint256 totalTokens = _tokenReward *
+            (_takerLimit == 0 ? 1000 : _takerLimit);
+        require(
+            quizToken.transferFrom(msg.sender, address(this), totalTokens),
+            "Token transfer failed"
+        );
+
+        quizCount++;
+        quizzes[quizCount] = Quiz({
+            owner: msg.sender,
+            name: _name,
+            tokenReward: _tokenReward,
+            totalTokens: totalTokens,
+            takerLimit: _takerLimit,
+            takerCount: 0,
+            winnerCount: 0,
+            startDate: _startDate,
+            endDate: _endDate,
+            active: true
+        });
+
+        emit QuizCreated(
+            quizCount,
+            msg.sender,
+            _name,
+            _tokenReward,
+            _takerLimit,
+            _startDate,
+            _endDate
+        );
+    }
+
+    function updateQuiz(
+        uint256 _quizId,
+        uint256 _newTokenReward,
+        uint256 _newTakerLimit,
+        uint256 _newStartDate,
+        uint256 _newEndDate
+    ) external nonReentrant {
+        Quiz storage quiz = quizzes[_quizId];
+        require(msg.sender == quiz.owner, "Only quiz owner can update");
+        require(quiz.active, "Quiz is not active");
+        require(
+            _newStartDate < _newEndDate,
+            "Start date must be before end date"
+        );
+        require(
+            _newStartDate > block.timestamp,
+            "Start date must be in the future"
+        );
+
+        uint256 newTotalTokens = _newTokenReward *
+            (_newTakerLimit == 0 ? 1000 : _newTakerLimit);
+
+        if (newTotalTokens > quiz.totalTokens) {
+            uint256 additionalTokens = newTotalTokens - quiz.totalTokens;
+            require(
+                quizToken.transferFrom(
+                    msg.sender,
+                    address(this),
+                    additionalTokens
+                ),
+                "Token transfer failed"
+            );
+        } else if (newTotalTokens < quiz.totalTokens) {
+            uint256 excessTokens = quiz.totalTokens - newTotalTokens;
+            require(
+                quizToken.transfer(msg.sender, excessTokens),
+                "Token return failed"
+            );
+        }
+
+        quiz.tokenReward = _newTokenReward;
+        quiz.takerLimit = _newTakerLimit;
+        quiz.totalTokens = newTotalTokens;
+        quiz.startDate = _newStartDate;
+        quiz.endDate = _newEndDate;
+
+        emit QuizUpdated(
+            _quizId,
+            _newTokenReward,
+            _newTakerLimit,
+            _newStartDate,
+            _newEndDate
+        );
+    }
+
+    function attemptQuiz(uint256 _quizId, bool _won) external nonReentrant {
+        Quiz storage quiz = quizzes[_quizId];
+        require(quiz.active, "Quiz is not active");
+        require(block.timestamp >= quiz.startDate, "Quiz has not started yet");
+        require(block.timestamp <= quiz.endDate, "Quiz has ended");
+        require(
+            quiz.takerLimit == 0 || quiz.takerCount < quiz.takerLimit,
+            "Quiz taker limit reached"
+        );
+        require(
+            !hasAttempted[_quizId][msg.sender],
+            "User has already attempted this quiz"
+        );
+
+        quiz.takerCount++;
+        hasAttempted[_quizId][msg.sender] = true;
+
+        uint256 reward = 0;
+        if (_won) {
+            reward = quiz.tokenReward;
+            require(
+                quizToken.transfer(msg.sender, reward),
+                "Token reward transfer failed"
+            );
+            quiz.winnerCount++;
+        }
+
+        if (quiz.takerLimit > 0 && quiz.takerCount == quiz.takerLimit) {
+            quiz.active = false;
+        }
+
+        emit QuizAttempted(_quizId, msg.sender, _won, reward);
+    }
+
+    function withdrawRemainingTokens(uint256 _quizId) external nonReentrant {
+        Quiz storage quiz = quizzes[_quizId];
+        require(msg.sender == quiz.owner, "Only quiz owner can withdraw");
+        require(
+            !quiz.active || block.timestamp > quiz.endDate,
+            "Can only withdraw from inactive or ended quizzes"
+        );
+
+        uint256 remainingTokens = quiz.totalTokens -
+            (quiz.tokenReward * quiz.winnerCount);
+        require(
+            quizToken.transfer(msg.sender, remainingTokens),
+            "Token withdrawal failed"
+        );
+
+        quiz.totalTokens = quiz.tokenReward * quiz.winnerCount;
+        quiz.active = false;
+    }
+
+    function emergencyWithdraw() external onlyOwner nonReentrant {
+        uint256 balance = quizToken.balanceOf(address(this));
+        require(
+            quizToken.transfer(owner(), balance),
+            "Emergency withdrawal failed"
+        );
+    }
+}
