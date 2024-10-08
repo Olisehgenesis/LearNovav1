@@ -61,10 +61,7 @@ contract QuizFactory is Ownable, ReentrancyGuard {
     ) external nonReentrant {
         require(_tokenReward > 0, "Token reward must be greater than 0");
         require(_startDate < _endDate, "Start date must be before end date");
-        require(
-            _startDate > block.timestamp,
-            "Start date must be in the future"
-        );
+        require(_endDate > block.timestamp, "End date must be in the future");
 
         uint256 totalTokens = _tokenReward *
             (_takerLimit == 0 ? 1000 : _takerLimit);
@@ -113,8 +110,8 @@ contract QuizFactory is Ownable, ReentrancyGuard {
             "Start date must be before end date"
         );
         require(
-            _newStartDate > block.timestamp,
-            "Start date must be in the future"
+            _newEndDate > block.timestamp,
+            "End date must be in the future"
         );
 
         uint256 newTotalTokens = _newTokenReward *
@@ -155,13 +152,12 @@ contract QuizFactory is Ownable, ReentrancyGuard {
 
     function attemptQuiz(uint256 _quizId, bool _won) external nonReentrant {
         Quiz storage quiz = quizzes[_quizId];
-        require(quiz.active, "Quiz is not active");
-        require(block.timestamp >= quiz.startDate, "Quiz has not started yet");
-        require(block.timestamp <= quiz.endDate, "Quiz has ended");
-        require(
-            quiz.takerLimit == 0 || quiz.takerCount < quiz.takerLimit,
-            "Quiz taker limit reached"
-        );
+        // require(quiz.active, "Quiz is not active");
+        // require(block.timestamp <= quiz.endDate, "Quiz has ended");
+        // require(
+        //     quiz.takerLimit == 0 || quiz.takerCount < quiz.takerLimit,
+        //     "Quiz taker limit reached"
+        // );
         require(
             !hasAttempted[_quizId][msg.sender],
             "User has already attempted this quiz"

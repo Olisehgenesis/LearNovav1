@@ -12,9 +12,16 @@ import {
   CircularProgress,
 } from "@mui/material";
 import { saveDocument, saveQuiz, saveReward } from "../../../lib/db";
+import { useQuizToken } from "../../token/hook/useQuizToken";
 
 const QuizCreationPage = ({ genAI }) => {
   const [step, setStep] = useState(1);
+  const {
+    ensName,
+    userAddress,
+    userBalance,
+    createQuiz: createBlockchainQuiz,
+  } = useQuizToken();
   const [quizData, setQuizData] = useState({
     name: "",
     startDate: "",
@@ -26,12 +33,12 @@ const QuizCreationPage = ({ genAI }) => {
     quizFile: null,
     numQuestions: 10,
     requiredPassScore: 70,
-    limitTakers: false,
-    takerLimit: null,
   });
   const [imagePreview, setImagePreview] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  const creationFee = 50;
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -46,7 +53,7 @@ const QuizCreationPage = ({ genAI }) => {
   };
 
   const handleInputChange = (e) => {
-    const { name, value, type, checked, files } = e.target;
+    const { name, value, type, files } = e.target;
     if (type === "file") {
       setQuizData((prev) => ({ ...prev, [name]: files[0] }));
       if (name === "coverImage") {
@@ -54,8 +61,6 @@ const QuizCreationPage = ({ genAI }) => {
         reader.onloadend = () => setImagePreview(reader.result);
         reader.readAsDataURL(files[0]);
       }
-    } else if (type === "checkbox") {
-      setQuizData((prev) => ({ ...prev, [name]: checked }));
     } else {
       setQuizData((prev) => ({ ...prev, [name]: value }));
     }
@@ -78,6 +83,35 @@ const QuizCreationPage = ({ genAI }) => {
     setIsLoading(true);
     setError(null);
     try {
+      const startDate = new Date(quizData.startDate);
+      const endDate = new Date(quizData.endDate);
+
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        throw new Error("Invalid start or end date");
+      }
+
+      if (startDate <= new Date()) {
+        throw new Error("Start date must be in the future");
+      }
+
+      if (endDate <= startDate) {
+        throw new Error("End date must be after start date");
+      }
+
+      const totalReward = quizData.rewards.reduce(
+        (sum, reward) => sum + Number(reward.amount),
+        0
+      );
+      const totalCost = creationFee + totalReward;
+
+      await createBlockchainQuiz(
+        quizData.name,
+        totalCost.toString(),
+        0, // Set taker limit to 0 (unlimited)
+        quizData.startDate,
+        quizData.endDate
+      );
+
       let quizContent = quizData.quizContent;
       if (quizData.quizFile) {
         const fileContent = await readFileContent(quizData.quizFile);
@@ -93,10 +127,10 @@ const QuizCreationPage = ({ genAI }) => {
 
       // Generate questions
       const questionsResult = await model.generateContent(`
-        Based on the following text, generate ${quizData.numQuestions} multiple-choice questions. 
+        Based on the following text, generate ${quizData.numQuestions} multiple-choice questions.
         Each question should directly relate to the content of the text.
-        For each question, 
-        provide 4 options labeled A, B, C, and D, where only one option is correct and 
+        For each question,
+        provide 4 options labeled A, B, C, and D, where only one option is correct and
         the other three plausible but incorrect options.
         Ensure that the questions cover different aspects of the text and vary in difficulty.
         Format the output exactly as follows:
@@ -137,19 +171,22 @@ const QuizCreationPage = ({ genAI }) => {
         documentId,
         questions: JSON.stringify(questions),
         numQuestions: quizData.numQuestions,
+        limitTakers: false,
         requiredPassScore: quizData.requiredPassScore,
-        limitTakers: quizData.limitTakers,
-        takerLimit: quizData.limitTakers ? quizData.takerLimit : null,
         startDate: quizData.startDate,
         endDate: quizData.endDate,
         coverImage: quizData.coverImage,
-        courseDistribution: "equal", // Or however you're determining this
+        courseDistribution: "equal",
       });
 
       // Save rewards
       for (const reward of quizData.rewards) {
         await saveReward(quizId, reward.token, reward.amount, "equal");
       }
+
+      // Save progress
+      //got to quiz broswer
+      window.location.href = "/quests";
 
       console.log("Quiz created successfully with ID:", quizId);
       // Handle successful creation (e.g., show success message, redirect)
@@ -170,9 +207,33 @@ const QuizCreationPage = ({ genAI }) => {
     });
   };
 
+  const totalCost =
+    creationFee +
+    quizData.rewards.reduce((sum, reward) => sum + Number(reward.amount), 0);
+
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-75 z-50">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-white"></div>
+          <h2 className="mt-4 text-xl font-semibold text-white">
+            Creating Quiz...
+          </h2>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-4xl font-bold mb-6">Create New Quiz</h1>
+      {/* User Info */}
+      <Alert className="mb-4" severity="info">
+        <AlertTitle>Your Information</AlertTitle>
+        <p>Address: {userAddress}</p>
+        <p>BaseName: {ensName}</p>
+        <p>Balance: {userBalance} LLT</p>
+      </Alert>
 
       {/* Step Indicator */}
       <div className="flex mb-2">
@@ -402,33 +463,6 @@ const QuizCreationPage = ({ genAI }) => {
             </FormControl>
 
             <FormControl fullWidth margin="normal">
-              <FormLabel className="text-lg font-bold">
-                <Input
-                  type="checkbox"
-                  name="limitTakers"
-                  checked={quizData.limitTakers}
-                  onChange={handleInputChange}
-                  className="mr-2"
-                />
-                Limit Number of Takers
-              </FormLabel>
-            </FormControl>
-
-            <FormControl fullWidth margin="normal">
-              <FormLabel htmlFor="takerLimit" className="text-lg font-bold">
-                Taker Limit
-              </FormLabel>
-              <Input
-                id="takerLimit"
-                name="takerLimit"
-                type="number"
-                min="1"
-                value={quizData.takerLimit}
-                onChange={handleInputChange}
-                className="border border-gray-500 rounded-md text-lg p-2"
-              />
-            </FormControl>
-            <FormControl fullWidth margin="normal">
               <FormLabel htmlFor="quizContent" className="text-lg font-bold">
                 Quiz Questions
               </FormLabel>
@@ -479,13 +513,15 @@ const QuizCreationPage = ({ genAI }) => {
         ) : (
           <Button
             onClick={handleSubmit}
-            disabled={isLoading}
+            disabled={
+              isLoading || !userAddress || parseFloat(userBalance) < totalCost
+            }
             className="ml-auto font-bold shadow-2xl hover:shadow-lg transition duration-300 bg-gray-800 text-white border border-gray-600 py-3 px-6 rounded disabled:opacity-50"
           >
             {isLoading ? (
               <CircularProgress size={24} color="inherit" />
             ) : (
-              "Create Quiz (50 LLT fee)"
+              `Create Quiz (${totalCost} LLT)`
             )}
           </Button>
         )}
@@ -500,7 +536,8 @@ const QuizCreationPage = ({ genAI }) => {
 
       <Alert className="mt-6" severity="info">
         <AlertTitle>Note</AlertTitle>
-        Creating a quiz requires a fee of 50 LLT tokens.
+        Creating a quiz requires a fee of {creationFee} LLT tokens, plus the
+        total reward amount. Total cost: {totalCost} LLT
       </Alert>
     </div>
   );

@@ -23,8 +23,6 @@ function Quiz({ quizData, onQuizCompleted, genAI }) {
         const questionObj = parsedQuestions[i];
         const optionsObj = parsedQuestions[i + 1];
 
-        console.log("questionObj", questionObj);
-
         formattedQuestions.push({
           id: questionObj.id,
           text: `Question ${i / 2 + 1}: ${optionsObj.options[0].replace(
@@ -99,7 +97,7 @@ function Quiz({ quizData, onQuizCompleted, genAI }) {
       const response = await result.response.text();
       const jsonString = response.replace(/```json\s?|\s?```/g, "").trim();
       const parsedResponse = JSON.parse(jsonString);
-      onQuizCompleted(parsedResponse);
+      onQuizCompleted({ ...parsedResponse, userAnswers: answers });
     } catch (error) {
       console.error("Error submitting answers:", error);
     } finally {

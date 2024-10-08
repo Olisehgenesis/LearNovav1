@@ -130,6 +130,8 @@ export async function saveQuiz({
     }));
   }
 export async function saveQuizAttempt(quizId: number, userAnswers: string, score: number) {
+  
+  
   const { data, error } = await supabase
     .from('quiz_attempts')
     .insert({ quiz_id: quizId, user_answers: userAnswers, score })

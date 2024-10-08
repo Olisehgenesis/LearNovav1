@@ -1,98 +1,136 @@
 import { useState, useEffect } from 'react';
-import { ethers } from 'ethers';
-import { useAccount, useReadContract, useWriteContract, usePrepareTransactionRequest } from 'wagmi';
-import { baseSepolia } from 'wagmi/chains';
+import { useAccount, useEnsName } from 'wagmi';
+import {account, publicClient,walletClient } from './client';
+import { formatEther, parseEther } from 'viem';
 import QuizTokenABI from '../contracts/abi/QuizTokenABI.json';
 import QuizFactoryABI from '../contracts/abi/QuizFactoryABI.json';
 
-const QUIZ_TOKEN_ADDRESS = '0xD31b5bED7ba6e427BBc9516041CC8B9B3EC13725';
-const QUIZ_FACTORY_ADDRESS = '0xB81c6a996971bE1Ae1246cb921E84a73de67FF94';
+const QUIZ_TOKEN_ADDRESS = '0x270B4190DD62De9fbb48Cd71C6B052f5924d4FcC';
+const QUIZ_FACTORY_ADDRESS = '0x2e026c70E43d76aA00040ECD85601fF47917C157';
 
 export function useQuizToken() {
   const { address: userAddress } = useAccount();
-  const [userBalance, setUserBalance] = useState(null);
-
-  // Read user balance
-  const { data: balanceData } = useReadContract({
-    address: QUIZ_TOKEN_ADDRESS,
-    abi: QuizTokenABI,
-    functionName: 'balanceOf',
-    args: [userAddress],
-    chainId: baseSepolia.id,
-  });
+  const [userBalance, setUserBalance] = useState<string | null>(null);
+  const { data: ensName } = useEnsName({ address: userAddress });
 
   useEffect(() => {
-    if (balanceData) {
-      setUserBalance(ethers.utils.formatEther(balanceData));
-    }
-  }, [balanceData]);
+    const fetchBalance = async () => {
+      if (userAddress) {
+        try {
+          const balanceData = await publicClient.readContract({
+            address: QUIZ_TOKEN_ADDRESS,
+            abi: QuizTokenABI,
+            functionName: 'balanceOf',
+            args: [userAddress],
+          });
+          setUserBalance(formatEther(balanceData));
+        } catch (error) {
+          console.error('Error fetching balance:', error);
+          setUserBalance(null);
+        }
+      }
+    };
 
-  // Prepare and execute contract writes
-  const { writeContract } = useWriteContract();
+    fetchBalance();
+  }, [userAddress]);
 
-  const createQuiz = async (name, tokenReward, takerLimit, startDate, endDate) => {
+  const createQuiz = async (
+    name: string,
+    tokenReward: string,
+    takerLimit: number,
+    startDate: string | Date,
+    endDate: string | Date
+  ) => {
     try {
-      const totalTokens = ethers.utils.parseEther(tokenReward).mul(takerLimit === 0 ? 1000 : takerLimit);
-      
+      const startDateTime = startDate instanceof Date ? startDate : new Date(startDate);
+      const endDateTime = endDate instanceof Date ? endDate : new Date(endDate);
+  
+      if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
+        throw new Error('Invalid start or end date');
+      }
+
+      const startTimestamp = BigInt(Math.floor(startDateTime.getTime() / 1000));
+      const endTimestamp = BigInt(Math.floor(endDateTime.getTime() / 1000));
+
+      console.log("Start Date:", startDateTime.toISOString());
+      console.log("End Date:", endDateTime.toISOString());
+      console.log("Start Timestamp:", startTimestamp.toString());
+      console.log("End Timestamp:", endTimestamp.toString());
+      console.log("Token Reward:", tokenReward);
+      console.log("Taker Limit:", takerLimit);
+  
+      const totalTokens = parseEther(tokenReward) * BigInt(takerLimit === 0 ? 1000 : takerLimit);
+      console.log("Total Tokens:", totalTokens.toString());
+
       // Approve tokens
-      await writeContract({
+      const approveResult = await walletClient.writeContract({
+        account,
         address: QUIZ_TOKEN_ADDRESS,
         abi: QuizTokenABI,
         functionName: 'approve',
         args: [QUIZ_FACTORY_ADDRESS, totalTokens],
-        chainId: baseSepolia.id,
       });
+      console.log("Approve transaction:", approveResult);
 
       // Create quiz
-      await writeContract({
+      const { request } = await publicClient.simulateContract({
         address: QUIZ_FACTORY_ADDRESS,
         abi: QuizFactoryABI,
         functionName: 'createQuiz',
         args: [
           name,
-          ethers.utils.parseEther(tokenReward),
-          takerLimit,
-          Math.floor(new Date(startDate).getTime() / 1000),
-          Math.floor(new Date(endDate).getTime() / 1000)
+          parseEther(tokenReward),
+          BigInt(takerLimit),
+          startTimestamp,
+          endTimestamp,
         ],
-        chainId: baseSepolia.id,
+        account,
       });
+      
+      const createResult = await walletClient.writeContract(request);
+      console.log('Quiz created successfully, transaction:', createResult);
 
-      console.log('Quiz created successfully');
+      // Wait for the transaction to be mined
+      const receipt = await publicClient.waitForTransactionReceipt({ hash: createResult });
+      console.log('Transaction receipt:', receipt);
+
+      return createResult;
     } catch (error) {
       console.error('Error creating quiz:', error);
+      throw error;
     }
   };
 
-  const attemptQuiz = async (quizId, won) => {
+  const attemptQuiz = async (quizId: bigint, won: boolean) => {
     try {
-      await writeContract({
+      const { request } = await publicClient.simulateContract({
         address: QUIZ_FACTORY_ADDRESS,
         abi: QuizFactoryABI,
         functionName: 'attemptQuiz',
         args: [quizId, won],
-        chainId: baseSepolia.id,
-      });
+        account,
+      })
+
+      await walletClient.writeContract(request);
       console.log('Quiz attempt recorded');
     } catch (error) {
       console.error('Error recording quiz attempt:', error);
     }
   };
 
-  const updateQuiz = async (quizId, newTokenReward, newTakerLimit, newStartDate, newEndDate) => {
+  const updateQuiz = async (quizId: bigint, newTokenReward: string, newTakerLimit: number, newStartDate: Date, newEndDate: Date) => {
     try {
-      await writeContract({
+      await publicClient.writeContract({
         address: QUIZ_FACTORY_ADDRESS,
         abi: QuizFactoryABI,
         functionName: 'updateQuiz',
         args: [
           quizId,
-          ethers.utils.parseEther(newTokenReward),
-          newTakerLimit,
-          Math.floor(new Date(newStartDate).getTime() / 1000),
-          Math.floor(new Date(newEndDate).getTime() / 1000)
+          parseEther(newTokenReward),
+          BigInt(newTakerLimit),
+          BigInt(Math.floor(newStartDate.getTime() / 1000)),
+          BigInt(Math.floor(newEndDate.getTime() / 1000))
         ],
-        chainId: baseSepolia.id,
       });
       console.log('Quiz updated successfully');
     } catch (error) {
@@ -100,14 +138,13 @@ export function useQuizToken() {
     }
   };
 
-  const withdrawRemainingTokens = async (quizId) => {
+  const withdrawRemainingTokens = async (quizId: bigint) => {
     try {
-      await writeContract({
+      await publicClient.writeContract({
         address: QUIZ_FACTORY_ADDRESS,
         abi: QuizFactoryABI,
         functionName: 'withdrawRemainingTokens',
         args: [quizId],
-        chainId: baseSepolia.id,
       });
       console.log('Remaining tokens withdrawn successfully');
     } catch (error) {
@@ -115,27 +152,26 @@ export function useQuizToken() {
     }
   };
 
-  const getQuizDetails = async (quizId) => {
+  const getQuizDetails = async (quizId: bigint) => {
     try {
-      const quizData = await readContract({
+      const quizData = await publicClient.readContract({
         address: QUIZ_FACTORY_ADDRESS,
         abi: QuizFactoryABI,
         functionName: 'quizzes',
         args: [quizId],
-        chainId: baseSepolia.id,
       });
 
       return {
-        owner: quizData.owner,
-        name: quizData.name,
-        tokenReward: ethers.utils.formatEther(quizData.tokenReward),
-        totalTokens: ethers.utils.formatEther(quizData.totalTokens),
-        takerLimit: quizData.takerLimit.toNumber(),
-        takerCount: quizData.takerCount.toNumber(),
-        winnerCount: quizData.winnerCount.toNumber(),
-        startDate: new Date(quizData.startDate.toNumber() * 1000),
-        endDate: new Date(quizData.endDate.toNumber() * 1000),
-        active: quizData.active
+        owner: quizData[0],
+        name: quizData[1],
+        tokenReward: formatEther(quizData[2]),
+        totalTokens: formatEther(quizData[3]),
+        takerLimit: Number(quizData[4]),
+        takerCount: Number(quizData[5]),
+        winnerCount: Number(quizData[6]),
+        startDate: new Date(Number(quizData[7]) * 1000),
+        endDate: new Date(Number(quizData[8]) * 1000),
+        active: quizData[9]
       };
     } catch (error) {
       console.error('Error fetching quiz details:', error);
@@ -144,6 +180,7 @@ export function useQuizToken() {
   };
 
   return {
+    ensName,
     userAddress,
     userBalance,
     createQuiz,

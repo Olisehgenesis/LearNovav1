@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { getQuizzes } from "../lib/db";
 import { Link } from "react-router-dom";
+import { useQuizToken } from "./token/hook/useQuizToken";
 
 interface Reward {
   reward_name: string;
@@ -25,12 +26,26 @@ function QuestBrowser() {
   const [quests, setQuests] = useState<Quest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { getQuizDetails } = useQuizToken();
 
   useEffect(() => {
     const fetchQuests = async () => {
       try {
         const fetchedQuizzes = await getQuizzes();
-        setQuests(fetchedQuizzes);
+
+        const updatedQuizzes = await Promise.all(
+          fetchedQuizzes.map(async (quiz) => {
+            const onChainDetails = await getQuizDetails(BigInt(quiz.id));
+            return {
+              ...quiz,
+              takerCount: onChainDetails.takerCount,
+              winnerCount: onChainDetails.winnerCount,
+              active: true,
+            };
+          })
+        );
+
+        setQuests(updatedQuizzes);
       } catch (error) {
         console.error("Error fetching quests:", error);
         setError("Failed to load quests. Please try again later.");
@@ -40,7 +55,7 @@ function QuestBrowser() {
     };
 
     fetchQuests();
-  }, []);
+  }, [getQuizDetails]);
 
   if (isLoading) {
     return <div className="text-center mt-8">Loading quests...</div>;
@@ -118,14 +133,23 @@ function QuestBrowser() {
               <p className="text-xs text-gray-500 mt-2">
                 Created: {new Date(quest.created_at).toLocaleDateString()}
               </p>
+              <p className="text-sm text-blue-600 mt-2">
+                Attempts: {quest.takerCount} | Winners: {quest.winnerCount}
+              </p>
             </div>
             <div className="bg-indigo-50 p-4">
-              <Link
-                to={`/attempt-quiz/${quest.id}`}
-                className="block w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition-colors text-center"
-              >
-                Start Quest
-              </Link>
+              {quest.active ? (
+                <Link
+                  to={`/attempt-quiz/${quest.id}`}
+                  className="block w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition-colors text-center"
+                >
+                  Start Quest
+                </Link>
+              ) : (
+                <span className="block w-full bg-gray-400 text-white py-2 rounded-lg text-center cursor-not-allowed">
+                  Quest Ended
+                </span>
+              )}
             </div>
           </motion.div>
         ))}
