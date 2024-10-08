@@ -104,7 +104,8 @@ const QuizCreationPage = ({ genAI }) => {
       );
       const totalCost = creationFee + totalReward;
 
-      await createBlockchainQuiz(
+      // Create quiz on blockchain
+      const blockchainQuizId = await createBlockchainQuiz(
         quizData.name,
         totalCost.toString(),
         0, // Set taker limit to 0 (unlimited)
@@ -161,12 +162,11 @@ const QuizCreationPage = ({ genAI }) => {
           options: options.map((opt) => opt.substring(3)),
         };
       });
-
       // Save document
       const documentId = await saveDocument(quizContent, summary);
 
       // Save quiz
-      const quizId = await saveQuiz({
+      const savedQuiz = await saveQuiz({
         name: quizData.name,
         documentId,
         questions: JSON.stringify(questions),
@@ -177,19 +177,18 @@ const QuizCreationPage = ({ genAI }) => {
         endDate: quizData.endDate,
         coverImage: quizData.coverImage,
         courseDistribution: "equal",
+        blockId: blockchainQuizId.toString(),
       });
 
       // Save rewards
       for (const reward of quizData.rewards) {
-        await saveReward(quizId, reward.token, reward.amount, "equal");
+        await saveReward(savedQuiz.id, reward.token, reward.amount, "equal");
       }
 
-      // Save progress
-      //got to quiz broswer
+      // Navigate to quiz browser
       window.location.href = "/quests";
 
-      console.log("Quiz created successfully with ID:", quizId);
-      // Handle successful creation (e.g., show success message, redirect)
+      console.log("Quiz created successfully with ID:", savedQuiz.id);
     } catch (err) {
       console.error("Error creating quiz:", err);
       setError("Failed to create quiz. Please try again.");
@@ -197,7 +196,6 @@ const QuizCreationPage = ({ genAI }) => {
       setIsLoading(false);
     }
   };
-
   const readFileContent = (file) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();

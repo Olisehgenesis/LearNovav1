@@ -70,7 +70,11 @@ export function useQuizToken() {
         functionName: 'approve',
         args: [QUIZ_FACTORY_ADDRESS, totalTokens],
       });
-      console.log("Approve transaction:", approveResult);
+
+      // Wait for the transaction to be mined
+      const approveReceipt = await publicClient.waitForTransactionReceipt({ hash: approveResult });
+
+      console.log("Approve transaction:", approveReceipt);
 
       // Create quiz
       const { request } = await publicClient.simulateContract({

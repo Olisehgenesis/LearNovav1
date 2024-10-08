@@ -34,3 +34,9 @@ CREATE TABLE IF NOT EXISTS quiz_attempts (
     score INTEGER NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+-- Add the block_id column to the quizzes table
+ALTER TABLE quizzes
+ADD COLUMN block_id VARCHAR(255);
+-- Add a unique constraint to ensure each quiz has a unique block_id
+ALTER TABLE quizzes
+ADD CONSTRAINT unique_block_id UNIQUE (block_id);
