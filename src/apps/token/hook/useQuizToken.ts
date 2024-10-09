@@ -42,7 +42,7 @@ const createQuiz = async (
   takerLimit: number,
   startDate: string | Date,
   endDate: string | Date
-): Promise<bigint> => {
+): Promise<number> => {
   try {
     const startDateTime = startDate instanceof Date ? startDate : new Date(startDate);
     const endDateTime = endDate instanceof Date ? endDate : new Date(endDate);
@@ -119,8 +119,8 @@ const createQuiz = async (
 
     if (!quizCreatedEvent) {
       console.warn('QuizCreated event not found in transaction logs');
-      // Instead of throwing an error, we'll return null
-      return null;
+ throw new Error('QuizCreated event not found in transaction logs');
+      return 0;
     }
 
     // Decode the event log to get the quizId
@@ -129,11 +129,17 @@ const createQuiz = async (
       data: quizCreatedEvent.data,
       topics: quizCreatedEvent.topics,
     });
+    if (!decodedEvent || !decodedEvent.args) {
+      throw new Error('Failed to decode QuizCreated event');
+    }
+    if (decodedEvent.args && typeof decodedEvent.args === 'object' && 'quizId' in decodedEvent.args) {
+      const quizId = Number(decodedEvent.args.quizId);
+      console.log('New Quiz ID:', quizId.toString());
+      return quizId;
+    } else {
+      throw new Error('Failed to decode QuizCreated event: quizId not found');
+    }
 
-    const quizId = decodedEvent.args.quizId as bigint;
-    console.log('New Quiz ID:', quizId.toString());
-
-    return quizId;
   } catch (error) {
     console.error('Error creating quiz:', error);
     throw error;
