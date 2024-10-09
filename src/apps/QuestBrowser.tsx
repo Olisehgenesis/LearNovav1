@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { getQuizzes } from "../lib/db";
 import { Link } from "react-router-dom";
@@ -25,6 +25,8 @@ interface Quest {
   takerCount: number;
   winnerCount: number;
   active: boolean;
+  total_rewards: number;
+  reward_count: number;
 }
 
 function QuestBrowser() {
@@ -38,17 +40,25 @@ function QuestBrowser() {
       try {
         const fetchedQuizzes = await getQuizzes();
         const updatedQuizzes = await Promise.all(
-          fetchedQuizzes.map(async (quiz) => {
+          fetchedQuizzes.map(async (quiz): Promise<Quest | null> => {
             const onChainDetails = await getQuizDetails(BigInt(quiz.blockId));
+            if (onChainDetails === null) {
+              console.warn(
+                `Failed to fetch on-chain details for quiz ${quiz.blockId}`
+              );
+              return null;
+            }
             return {
               ...quiz,
               takerCount: onChainDetails.takerCount,
               winnerCount: onChainDetails.winnerCount,
-              active: true,
+              active: onChainDetails.active,
             };
           })
         );
-        setQuests(updatedQuizzes);
+        setQuests(
+          updatedQuizzes.filter((quiz): quiz is Quest => quiz !== null)
+        );
       } catch (error) {
         console.error("Error fetching quests:", error);
         setError("Failed to load quests. Please try again later.");
@@ -75,7 +85,6 @@ function QuestBrowser() {
       timeRemaining: timeString,
     };
   };
-
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
