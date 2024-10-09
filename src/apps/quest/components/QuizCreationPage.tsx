@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, ChangeEvent } from "react";
 import {
   Button,
   Input,
@@ -13,8 +13,31 @@ import {
 } from "@mui/material";
 import { saveDocument, saveQuiz, saveReward } from "../../../lib/db";
 import { useQuizToken } from "../../token/hook/useQuizToken";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const QuizCreationPage = ({ genAI }) => {
+interface QuizData {
+  questions:
+    | string
+    | Array<{
+        id: number;
+        text: string;
+        options: Array<{
+          letter: string;
+          text: string;
+        }>;
+      }>;
+  summary: string;
+}
+
+interface QuizCreationPageProps {
+  genAI: GoogleGenerativeAI;
+  onQuizCreated: (quizData: QuizData) => void;
+}
+
+const QuizCreationPage: React.FC<QuizCreationPageProps> = ({
+  genAI,
+  onQuizCreated,
+}) => {
   const [step, setStep] = useState(1);
   const {
     ensName,
@@ -26,49 +49,55 @@ const QuizCreationPage = ({ genAI }) => {
     name: "",
     startDate: "",
     endDate: "",
-    coverImage: null,
+    coverImage: undefined as File | undefined,
     description: "",
     rewards: [{ token: "LLT", amount: 50 }],
     quizContent: "",
-    quizFile: null,
+    quizFile: null as File | null,
     numQuestions: 10,
     requiredPassScore: 70,
+    limitTakers: false,
+    takerLimit: null as number | null,
   });
-  const [imagePreview, setImagePreview] = useState(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   const creationFee = 50;
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (file) {
       setQuizData((prev) => ({ ...prev, coverImage: file }));
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result);
+        setImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleInputChange = (e) => {
-    const { name, value, type, files } = e.target;
+  const handleInputChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value, type } = e.target;
     if (type === "file") {
-      setQuizData((prev) => ({ ...prev, [name]: files[0] }));
-      if (name === "coverImage") {
+      const fileInput = e.target as HTMLInputElement;
+      const file = fileInput.files?.[0] || null;
+      setQuizData((prev) => ({ ...prev, [name]: file }));
+      if (name === "coverImage" && file) {
         const reader = new FileReader();
-        reader.onloadend = () => setImagePreview(reader.result);
-        reader.readAsDataURL(files[0]);
+        reader.onloadend = () => setImagePreview(reader.result as string);
+        reader.readAsDataURL(file);
       }
     } else {
       setQuizData((prev) => ({ ...prev, [name]: value }));
     }
   };
 
-  const handleRewardChange = (index, field, value) => {
+  const handleRewardChange = (index: number, field: string, value: string) => {
     const updatedRewards = [...quizData.rewards];
-    updatedRewards[index][field] = value;
+    updatedRewards[index] = { ...updatedRewards[index], [field]: value };
     setQuizData((prev) => ({ ...prev, rewards: updatedRewards }));
   };
 
@@ -83,27 +112,6 @@ const QuizCreationPage = ({ genAI }) => {
     setIsLoading(true);
     setError(null);
     try {
-      const startDate = new Date(quizData.startDate);
-      const endDate = new Date(quizData.endDate);
-
-      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-        throw new Error("Invalid start or end date");
-      }
-
-      if (startDate <= new Date()) {
-        throw new Error("Start date must be in the future");
-      }
-
-      if (endDate <= startDate) {
-        throw new Error("End date must be after start date");
-      }
-
-      const totalReward = quizData.rewards.reduce(
-        (sum, reward) => sum + Number(reward.amount),
-        0
-      );
-      const totalCost = creationFee + totalReward;
-
       // Create quiz on blockchain
       const blockchainQuizId = await createBlockchainQuiz(
         quizData.name,
@@ -168,10 +176,11 @@ const QuizCreationPage = ({ genAI }) => {
       // Save quiz
       const savedQuiz = await saveQuiz({
         name: quizData.name,
-        documentId,
+        documentId: documentId as number, // Ensure documentId is a number
         questions: JSON.stringify(questions),
         numQuestions: quizData.numQuestions,
-        limitTakers: false,
+        limitTakers: quizData.limitTakers,
+        takerLimit: quizData.takerLimit,
         requiredPassScore: quizData.requiredPassScore,
         startDate: quizData.startDate,
         endDate: quizData.endDate,
@@ -185,8 +194,13 @@ const QuizCreationPage = ({ genAI }) => {
         await saveReward(savedQuiz.id, reward.token, reward.amount, "equal");
       }
 
+      onQuizCreated({
+        questions: JSON.stringify(questions),
+        summary: summary,
+      });
+
       // Navigate to quiz browser
-      window.location.href = "/quests";
+      // window.location.href = "/quests";
 
       console.log("Quiz created successfully with ID:", savedQuiz.id);
     } catch (err) {
@@ -196,10 +210,10 @@ const QuizCreationPage = ({ genAI }) => {
       setIsLoading(false);
     }
   };
-  const readFileContent = (file) => {
+  const readFileContent = (file: Blob) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = (event) => resolve(event.target.result);
+      reader.onload = (event) => resolve(event.target?.result);
       reader.onerror = (error) => reject(error);
       reader.readAsText(file);
     });
@@ -328,7 +342,6 @@ const QuizCreationPage = ({ genAI }) => {
                 type="file"
                 onChange={handleFileChange}
                 className="border border-gray-500 rounded-md text-lg p-2"
-                accept="image/*"
               />
             </FormControl>
 
@@ -433,8 +446,6 @@ const QuizCreationPage = ({ genAI }) => {
                 id="numQuestions"
                 name="numQuestions"
                 type="number"
-                min="1"
-                max="20"
                 value={quizData.numQuestions}
                 onChange={handleInputChange}
                 className="border border-gray-500 rounded-md text-lg p-2"
@@ -452,8 +463,6 @@ const QuizCreationPage = ({ genAI }) => {
                 id="requiredPassScore"
                 name="requiredPassScore"
                 type="number"
-                min="0"
-                max="100"
                 value={quizData.requiredPassScore}
                 onChange={handleInputChange}
                 className="border border-gray-500 rounded-md text-lg p-2"
@@ -512,7 +521,9 @@ const QuizCreationPage = ({ genAI }) => {
           <Button
             onClick={handleSubmit}
             disabled={
-              isLoading || !userAddress || parseFloat(userBalance) < totalCost
+              isLoading ||
+              !userAddress ||
+              (userBalance !== null && parseFloat(userBalance) < totalCost)
             }
             className="ml-auto font-bold shadow-2xl hover:shadow-lg transition duration-300 bg-gray-800 text-white border border-gray-600 py-3 px-6 rounded disabled:opacity-50"
           >

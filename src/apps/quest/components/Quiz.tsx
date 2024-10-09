@@ -1,13 +1,43 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Trophy } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-function Quiz({ quizData, onQuizCompleted, genAI }) {
+interface QuizQuestion {
+  id: number;
+  text: string;
+  options: Array<{
+    letter: string;
+    text: string;
+  }>;
+}
+
+interface QuizData {
+  questions: string | QuizQuestion[];
+  summary: string;
+}
+
+interface QuizProps {
+  quizData: QuizData;
+  onQuizCompleted: (result: {
+    score: number;
+    feedback: string;
+    questionFeedback: Array<{
+      id: number;
+      correct: boolean;
+      feedback: string;
+    }>;
+    userAnswers: Record<number, string>;
+  }) => void;
+  genAI: GoogleGenerativeAI;
+}
+
+function Quiz({ quizData, onQuizCompleted, genAI }: QuizProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState({});
-  const [selectedOption, setSelectedOption] = useState(null);
+  const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [questions, setQuestions] = useState([]);
+  const [questions, setQuestions] = useState<QuizQuestion[]>([]);
 
   useEffect(() => {
     if (quizData && quizData.questions) {
@@ -17,7 +47,7 @@ function Quiz({ quizData, onQuizCompleted, genAI }) {
           ? JSON.parse(quizData.questions)
           : quizData.questions;
 
-      const formattedQuestions = [];
+      const formattedQuestions: QuizQuestion[] = [];
 
       for (let i = 0; i < parsedQuestions.length; i += 2) {
         const questionObj = parsedQuestions[i];
@@ -29,10 +59,12 @@ function Quiz({ quizData, onQuizCompleted, genAI }) {
             /^t\s/,
             ""
           )}`,
-          options: optionsObj.options.slice(1).map((option, index) => ({
-            letter: String.fromCharCode(65 + index),
-            text: option,
-          })),
+          options: optionsObj.options
+            .slice(1)
+            .map((option: string, index: number) => ({
+              letter: String.fromCharCode(65 + index),
+              text: option,
+            })),
         });
       }
 
@@ -52,7 +84,7 @@ function Quiz({ quizData, onQuizCompleted, genAI }) {
 
   const currentQuestion = questions[currentQuestionIndex];
 
-  const handleOptionSelect = (option) => {
+  const handleOptionSelect = (option: string) => {
     setSelectedOption(option);
     setAnswers({ ...answers, [currentQuestion.id]: option });
   };

@@ -3,26 +3,52 @@ import { motion, AnimatePresence } from "framer-motion";
 import QuizPage from "./components/QuizPage";
 import Results from "./components/Results";
 import QuizCreationPage from "./components/QuizCreationPage";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-function QuizzApp({ genAI }) {
-  const [stage, setStage] = useState("list");
-  const [quizData, setQuizData] = useState(null);
-  const [score, setScore] = useState(null);
+// Define a type for the GenAI instance
+interface QuizzAppProps {
+  genAI: GoogleGenerativeAI;
+}
 
-  const handleFileProcessed = (data) => {
-    setQuizData(data);
-    setStage("quiz");
-  };
+interface QuizQuestion {
+  id: number;
+  text: string;
+  options: Array<{
+    letter: string;
+    text: string;
+  }>;
+}
 
-  const handleQuizCompleted = (result) => {
-    setScore(result);
+interface QuizData {
+  questions: string | QuizQuestion[];
+  summary: string;
+}
+
+interface QuizResults {
+  score: number;
+  feedback: string;
+  questionFeedback: Array<{
+    id: number;
+    correct: boolean;
+    feedback: string;
+  }>;
+  userAnswers: Record<number, string>;
+}
+
+function QuizzApp({ genAI }: QuizzAppProps) {
+  const [stage, setStage] = useState<"list" | "quiz" | "results">("list");
+  const [quizData, setQuizData] = useState<QuizData | null>(null);
+  const [quizResults, setQuizResults] = useState<QuizResults | null>(null);
+
+  const handleQuizCompleted = (results: QuizResults) => {
+    setQuizResults(results);
     setStage("results");
   };
 
   const handleBackToList = () => {
     setStage("list");
     setQuizData(null);
-    setScore(null);
+    setQuizResults(null);
   };
 
   return (
@@ -53,11 +79,17 @@ function QuizzApp({ genAI }) {
                 transition={{ duration: 0.3 }}
                 className="p-6"
               >
-                <QuizCreationPage genAI={genAI} />
+                <QuizCreationPage
+                  genAI={genAI}
+                  onQuizCreated={(newQuizData) => {
+                    setQuizData(newQuizData);
+                    setStage("quiz");
+                  }}
+                />
               </motion.div>
             )}
 
-            {stage === "quiz" && (
+            {stage === "quiz" && quizData && genAI && (
               <motion.div
                 key="quiz"
                 initial={{ opacity: 0, x: 100 }}
@@ -73,7 +105,7 @@ function QuizzApp({ genAI }) {
               </motion.div>
             )}
 
-            {stage === "results" && (
+            {stage === "results" && quizResults && (
               <motion.div
                 key="results"
                 initial={{ opacity: 0, y: 20 }}
@@ -82,7 +114,10 @@ function QuizzApp({ genAI }) {
                 transition={{ duration: 0.3 }}
                 className="p-6"
               >
-                <Results score={score} onBackToList={handleBackToList} />
+                <Results
+                  results={quizResults}
+                  onBackToList={handleBackToList}
+                />
               </motion.div>
             )}
           </AnimatePresence>

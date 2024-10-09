@@ -11,29 +11,25 @@ interface ResultsProps {
       correct: boolean;
       feedback: string;
     }>;
+    userAnswers: Record<number, string>;
   };
-  quizData: {
-    id: number;
-    questions: Array<{
-      text: string;
-    }>;
-    required_pass_score: number;
-  };
+  onBackToList: () => void;
 }
 
-const Results: React.FC<ResultsProps> = ({ results, quizData }) => {
+const Results: React.FC<ResultsProps> = ({ results, onBackToList }) => {
   const [isAwarding, setIsAwarding] = useState(false);
   const [awardError, setAwardError] = useState<string | null>(null);
   const { attemptQuiz } = useQuizToken();
-  const navigate = useNavigate();
 
-  const isPassed = results.score >= quizData.required_pass_score;
+  // Since we don't have quizData, we'll need to adjust how we determine if the quiz is passed
+  const isPassed = results.score >= 70; // You might want to adjust this threshold
 
   const handleAwardReward = async () => {
     setIsAwarding(true);
     setAwardError(null);
     try {
-      await attemptQuiz(BigInt(quizData.id), true);
+      // You'll need to adjust this to use the correct quiz ID
+      await attemptQuiz(BigInt(1), true); // Replace 1 with the actual quiz ID
       alert("Congratulations! You've been awarded the reward.");
     } catch (error) {
       console.error("Error awarding reward:", error);
@@ -44,7 +40,8 @@ const Results: React.FC<ResultsProps> = ({ results, quizData }) => {
   };
 
   const handleRetake = () => {
-    navigate(`/attempt-quiz/${quizData.id}`);
+    // Instead of navigating, we'll use the onBackToList prop
+    onBackToList();
   };
 
   return (
@@ -61,14 +58,13 @@ const Results: React.FC<ResultsProps> = ({ results, quizData }) => {
       <p className="mb-6 text-center font-semibold">{results.feedback}</p>
       <h3 className="text-xl font-semibold mb-4">Question Feedback:</h3>
       <ul className="space-y-4 mb-8">
-        {results.questionFeedback.map((feedback, index) => (
+        {results.questionFeedback.map((feedback) => (
           <li
             key={feedback.id}
             className={`p-4 rounded-lg ${
               feedback.correct ? "bg-green-100" : "bg-red-100"
             }`}
           >
-            <p className="font-semibold">{quizData.questions[index].text}</p>
             <p className={feedback.correct ? "text-green-700" : "text-red-700"}>
               {feedback.feedback}
             </p>

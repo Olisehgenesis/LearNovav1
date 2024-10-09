@@ -42,6 +42,8 @@ export async function saveDocument(content: string, summary: string) {
   if (error) handleError(error)
   return data.id
 }
+
+
 export async function saveQuiz({
   name,
   documentId,
@@ -65,13 +67,16 @@ export async function saveQuiz({
   takerLimit: number | null,
   startDate: string,
   endDate: string,
-  coverImage: File,
+  coverImage?: File, // Make coverImage optional
   courseDistribution: string,
   blockId: string
 }) {
-  // Upload the cover image
-  const imagePath = `quiz-covers/${Date.now()}-${coverImage.name}`
-  const coverImageUrl = await uploadImage(coverImage, imagePath)
+  // Upload the cover image if it exists
+  let coverImageUrl: string | null = null;
+  if (coverImage) {
+    const imagePath = `quiz-covers/${Date.now()}-${coverImage.name}`;
+    coverImageUrl = await uploadImage(coverImage, imagePath);
+  }
 
   const { data, error } = await supabase
     .from('quizzes')
@@ -90,10 +95,10 @@ export async function saveQuiz({
       block_id: blockId
     })
     .select()
-    .single()
+    .single();
 
-  if (error) handleError(error)
-  return data
+  if (error) handleError(error);
+  return data;
 }
 
 export async function getQuizzes() {
