@@ -1,13 +1,21 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { getQuizzes } from "../lib/db";
 
 interface Quest {
   id: number;
-  questions: string;
-  total_rewards_tokens: number;
+  name: string;
+  blockId: string;
+  num_questions: number;
+  required_pass_score: number;
+  rewards: Array<{ reward_name: string; amount: number }>;
+  start_date: string;
+  end_date: string;
+  cover_image_url: string;
   created_at: string;
+  total_rewards: number;
+  reward_count: number;
 }
 
 function Home() {
@@ -82,10 +90,11 @@ function Home() {
               key={quest.id}
               className="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow"
             >
-              <h3 className="font-semibold mb-2">Quest #{quest.id}</h3>
+              <h3 className="font-semibold mb-2">
+                {quest.name || `Quest #${quest.id}`}
+              </h3>
               <p className="text-sm text-gray-600">
-                Earn {quest.total_rewards_tokens} LRN Tokens
-                {/* Earn {quest.total_rewards_tokens.toFixed(2)} LRN Tokens */}
+                Earn {quest.total_rewards.toFixed(2)} LRN Tokens
               </p>
               <p className="text-xs text-gray-500 mt-2">
                 Created: {new Date(quest.created_at).toLocaleDateString()}

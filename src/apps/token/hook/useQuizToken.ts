@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAccount, useEnsName } from 'wagmi';
-import {account, publicClient,walletClient } from './client';
+import { account, publicClient, walletClient } from './client';
 import { formatEther, parseEther } from 'viem';
 import QuizTokenABI from '../contracts/abi/QuizTokenABI.json';
 import QuizFactoryABI from '../contracts/abi/QuizFactoryABI.json';
@@ -22,7 +22,7 @@ export function useQuizToken() {
             abi: QuizTokenABI,
             functionName: 'balanceOf',
             args: [userAddress],
-          });
+          }) as bigint;
           setUserBalance(formatEther(balanceData));
         } catch (error) {
           console.error('Error fetching balance:', error);
@@ -113,18 +113,20 @@ export function useQuizToken() {
         functionName: 'attemptQuiz',
         args: [quizId, won],
         account,
-      })
+      });
 
-      await walletClient.writeContract(request);
-      console.log('Quiz attempt recorded');
+      const result = await walletClient.writeContract(request);
+      console.log('Quiz attempt recorded, transaction:', result);
+      return result;
     } catch (error) {
       console.error('Error recording quiz attempt:', error);
+      throw error;
     }
   };
 
   const updateQuiz = async (quizId: bigint, newTokenReward: string, newTakerLimit: number, newStartDate: Date, newEndDate: Date) => {
     try {
-      await publicClient.writeContract({
+      const { request } = await publicClient.simulateContract({
         address: QUIZ_FACTORY_ADDRESS,
         abi: QuizFactoryABI,
         functionName: 'updateQuiz',
@@ -135,24 +137,34 @@ export function useQuizToken() {
           BigInt(Math.floor(newStartDate.getTime() / 1000)),
           BigInt(Math.floor(newEndDate.getTime() / 1000))
         ],
+        account,
       });
-      console.log('Quiz updated successfully');
+
+      const result = await walletClient.writeContract(request);
+      console.log('Quiz updated successfully, transaction:', result);
+      return result;
     } catch (error) {
       console.error('Error updating quiz:', error);
+      throw error;
     }
   };
 
   const withdrawRemainingTokens = async (quizId: bigint) => {
     try {
-      await publicClient.writeContract({
+      const { request } = await publicClient.simulateContract({
         address: QUIZ_FACTORY_ADDRESS,
         abi: QuizFactoryABI,
         functionName: 'withdrawRemainingTokens',
         args: [quizId],
+        account,
       });
-      console.log('Remaining tokens withdrawn successfully');
+
+      const result = await walletClient.writeContract(request);
+      console.log('Remaining tokens withdrawn successfully, transaction:', result);
+      return result;
     } catch (error) {
       console.error('Error withdrawing remaining tokens:', error);
+      throw error;
     }
   };
 
@@ -163,7 +175,7 @@ export function useQuizToken() {
         abi: QuizFactoryABI,
         functionName: 'quizzes',
         args: [quizId],
-      });
+      }) as [string, string, bigint, bigint, bigint, bigint, bigint, bigint, bigint, boolean];
 
       return {
         owner: quizData[0],

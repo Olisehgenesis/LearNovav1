@@ -1,7 +1,4 @@
-import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-
-import { useAccount, useConnect, useDisconnect } from "wagmi";
 import Header from "./components/Header";
 import Home from "./apps/home";
 import QuizzApp from "./apps/quest/Index";
@@ -10,8 +7,6 @@ import ErrorBoundary from "./ErrorBoundary";
 import { genAI } from "./lib/genAI";
 import QuestBrowser from "./apps/QuestBrowser";
 import AttemptQuiz from "./apps/AttemptQuiz";
-
-import ChainContext from "./lib/chainContext";
 
 function App() {
   return (

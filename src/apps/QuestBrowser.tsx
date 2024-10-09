@@ -44,7 +44,7 @@ function QuestBrowser() {
               ...quiz,
               takerCount: onChainDetails.takerCount,
               winnerCount: onChainDetails.winnerCount,
-              active: onChainDetails.active,
+              active: true,
             };
           })
         );

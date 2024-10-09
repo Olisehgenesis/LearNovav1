@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { baseSepolia } from "wagmi/chains";
 import { useState, type ReactNode } from "react";
 import { WagmiProvider } from "wagmi";
-import { RainbowKitProvider, getDefaultConfig } from "@rainbow-me/rainbowkit";
+import { RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { config } from "./wagmi";
 import "@coinbase/onchainkit/styles.css";
 import "@rainbow-me/rainbowkit/styles.css";

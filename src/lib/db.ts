@@ -18,6 +18,7 @@ export async function uploadImage(file: File, path: string) {
         cacheControl: '3600',
         upsert: false
       })
+    console.log(data)
   
     if (error) {
       console.error('Error uploading file:', error)
@@ -121,7 +122,7 @@ return data.map(quiz => ({
   questions: quiz.questions,
   num_questions: quiz.num_questions,
   required_pass_score: quiz.required_pass_score,
-  rewards: quiz.rewards.map(reward => ({
+  rewards: quiz.rewards.map((reward: { reward_name: any; amount: any }) => ({
     reward_name: reward.reward_name,
     amount: reward.amount
   })),
@@ -129,7 +130,7 @@ return data.map(quiz => ({
   end_date: quiz.end_date,
   cover_image_url: quiz.cover_image_url,
   created_at: quiz.created_at,
-  total_rewards: quiz.rewards.reduce((total, reward) => total + reward.amount, 0),
+  total_rewards: quiz.rewards.reduce((total: any, reward: { amount: any }) => total + reward.amount, 0),
   reward_count: quiz.rewards.length
 }));
 }
@@ -188,7 +189,9 @@ export async function saveMultipleRewards(rewards: Array<{
       distribution_type: reward.distributionType
     })))
     .select()
-
+  if (!data) {
+    return 0; // Return 0 if no rewards are found
+  }
   if (error) handleError(error)
   return data.map(reward => reward.id)
 }
@@ -241,7 +244,9 @@ export async function getTotalRewardsForQuiz(quizId: number) {
     .from('rewards')
     .select('amount')
     .eq('quiz_id', quizId)
-
+  if (!data) {
+      return 0; // Return 0 if no rewards are found
+    }
   if (error) handleError(error)
   return data.reduce((total, reward) => total + reward.amount, 0)
 }
