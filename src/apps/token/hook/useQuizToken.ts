@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAccount, useEnsName } from 'wagmi';
 import { account, publicClient, walletClient } from './client';
-import { formatEther, parseEther } from 'viem';
+import { formatEther, parseEther , decodeEventLog} from 'viem';
 import QuizTokenABI from '../contracts/abi/QuizTokenABI.json';
 import QuizFactoryABI from '../contracts/abi/QuizFactoryABI.json';
 
@@ -34,76 +34,111 @@ export function useQuizToken() {
     fetchBalance();
   }, [userAddress]);
 
-  const createQuiz = async (
-    name: string,
-    tokenReward: string,
-    takerLimit: number,
-    startDate: string | Date,
-    endDate: string | Date
-  ) => {
-    try {
-      const startDateTime = startDate instanceof Date ? startDate : new Date(startDate);
-      const endDateTime = endDate instanceof Date ? endDate : new Date(endDate);
-  
-      if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
-        throw new Error('Invalid start or end date');
-      }
 
-      const startTimestamp = BigInt(Math.floor(startDateTime.getTime() / 1000));
-      const endTimestamp = BigInt(Math.floor(endDateTime.getTime() / 1000));
 
-      console.log("Start Date:", startDateTime.toISOString());
-      console.log("End Date:", endDateTime.toISOString());
-      console.log("Start Timestamp:", startTimestamp.toString());
-      console.log("End Timestamp:", endTimestamp.toString());
-      console.log("Token Reward:", tokenReward);
-      console.log("Taker Limit:", takerLimit);
-  
-      const totalTokens = parseEther(tokenReward) * BigInt(takerLimit === 0 ? 1000 : takerLimit);
-      console.log("Total Tokens:", totalTokens.toString());
+const createQuiz = async (
+  name: string,
+  tokenReward: string,
+  takerLimit: number,
+  startDate: string | Date,
+  endDate: string | Date
+): Promise<bigint> => {
+  try {
+    const startDateTime = startDate instanceof Date ? startDate : new Date(startDate);
+    const endDateTime = endDate instanceof Date ? endDate : new Date(endDate);
 
-      // Approve tokens
-      const approveResult = await walletClient.writeContract({
-        account: await account(),
-        address: QUIZ_TOKEN_ADDRESS,
-        abi: QuizTokenABI,
-        functionName: 'approve',
-        args: [QUIZ_FACTORY_ADDRESS, totalTokens],
-      });
-
-      // Wait for the transaction to be mined
-      const approveReceipt = await publicClient.waitForTransactionReceipt({ hash: approveResult });
-
-      console.log("Approve transaction:", approveReceipt);
-
-      // Create quiz
-      const { request } = await publicClient.simulateContract({
-        address: QUIZ_FACTORY_ADDRESS,
-        abi: QuizFactoryABI,
-        functionName: 'createQuiz',
-        args: [
-          name,
-          parseEther(tokenReward),
-          BigInt(takerLimit),
-          startTimestamp,
-          endTimestamp,
-        ],
-        account: await account(),
-      });
-      
-      const createResult = await walletClient.writeContract(request);
-      console.log('Quiz created successfully, transaction:', createResult);
-
-      // Wait for the transaction to be mined
-      const receipt = await publicClient.waitForTransactionReceipt({ hash: createResult });
-      console.log('Transaction receipt:', receipt);
-
-      return createResult;
-    } catch (error) {
-      console.error('Error creating quiz:', error);
-      throw error;
+    if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
+      throw new Error('Invalid start or end date');
     }
-  };
+
+    const startTimestamp = BigInt(Math.floor(startDateTime.getTime() / 1000));
+    const endTimestamp = BigInt(Math.floor(endDateTime.getTime() / 1000));
+
+    console.log("Start Date:", startDateTime.toISOString());
+    console.log("End Date:", endDateTime.toISOString());
+    console.log("Start Timestamp:", startTimestamp.toString());
+    console.log("End Timestamp:", endTimestamp.toString());
+    console.log("Token Reward:", tokenReward);
+    console.log("Taker Limit:", takerLimit);
+
+    const totalTokens = parseEther(tokenReward) * BigInt(takerLimit === 0 ? 1000 : takerLimit);
+    console.log("Total Tokens:", totalTokens.toString());
+
+    // Approve tokens
+    const approveResult = await walletClient.writeContract({
+      account: await account(),
+      address: QUIZ_TOKEN_ADDRESS,
+      abi: QuizTokenABI,
+      functionName: 'approve',
+      args: [QUIZ_FACTORY_ADDRESS, totalTokens],
+    });
+
+    // Wait for the approval transaction to be mined
+    await publicClient.waitForTransactionReceipt({ hash: approveResult });
+
+    console.log("Tokens approved successfully");
+
+    // Create quiz
+    const { request } = await publicClient.simulateContract({
+      address: QUIZ_FACTORY_ADDRESS,
+      abi: QuizFactoryABI,
+      functionName: 'createQuiz',
+      args: [
+        name,
+        parseEther(tokenReward),
+        BigInt(takerLimit),
+        startTimestamp,
+        endTimestamp,
+      ],
+      account: await account(),
+    });
+    
+    const createResult = await walletClient.writeContract(request);
+    console.log('Quiz creation transaction sent:', createResult);
+
+    // Wait for the transaction to be mined and get the receipt
+    const receipt = await publicClient.waitForTransactionReceipt({ hash: createResult });
+    console.log('Quiz creation transaction mined:', receipt);
+
+    // Log all events for debugging
+    console.log('All logs:', receipt.logs);
+
+    // Find the QuizCreated event in the logs
+    const quizCreatedEvent = receipt.logs.find((log) => {
+      try {
+        const decodedLog = decodeEventLog({
+          abi: QuizFactoryABI,
+          data: log.data,
+          topics: log.topics,
+        });
+        return decodedLog.eventName === 'QuizCreated';
+      } catch {
+        return false;
+      }
+    });
+
+    if (!quizCreatedEvent) {
+      console.warn('QuizCreated event not found in transaction logs');
+      // Instead of throwing an error, we'll return null
+      return null;
+    }
+
+    // Decode the event log to get the quizId
+    const decodedEvent = decodeEventLog({
+      abi: QuizFactoryABI,
+      data: quizCreatedEvent.data,
+      topics: quizCreatedEvent.topics,
+    });
+
+    const quizId = decodedEvent.args.quizId as bigint;
+    console.log('New Quiz ID:', quizId.toString());
+
+    return quizId;
+  } catch (error) {
+    console.error('Error creating quiz:', error);
+    throw error;
+  }
+};
 
   const attemptQuiz = async (quizId: bigint, won: boolean) => {
     try {
