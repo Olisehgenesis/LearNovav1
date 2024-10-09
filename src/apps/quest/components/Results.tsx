@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useQuizToken } from "../../token/hook/useQuizToken";
+import { QuizData } from "./shared-types";
 
 interface ResultsProps {
   results: {
@@ -12,10 +13,15 @@ interface ResultsProps {
     }>;
     userAnswers: Record<number, string>;
   };
+  quizData: QuizData;
   onBackToList: () => void;
 }
 
-const Results: React.FC<ResultsProps> = ({ results, onBackToList }) => {
+const Results: React.FC<ResultsProps> = ({
+  results,
+  quizData,
+  onBackToList,
+}) => {
   const [isAwarding, setIsAwarding] = useState(false);
   const [awardError, setAwardError] = useState<string | null>(null);
   const { attemptQuiz } = useQuizToken();
@@ -27,8 +33,8 @@ const Results: React.FC<ResultsProps> = ({ results, onBackToList }) => {
     setIsAwarding(true);
     setAwardError(null);
     try {
-      // You'll need to adjust this to use the correct quiz ID
-      await attemptQuiz(BigInt(1), true); // Replace 1 with the actual quiz ID
+      const quizId = BigInt(quizData.blockId ?? 1);
+      await attemptQuiz(quizId, true);
       alert("Congratulations! You've been awarded the reward.");
     } catch (error) {
       console.error("Error awarding reward:", error);

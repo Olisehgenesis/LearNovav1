@@ -91,6 +91,7 @@ function AttemptQuiz({ genAI }: AttemptQuizProps) {
         ) : quizCompleted && quizResults && quizData ? (
           <Results
             results={quizResults}
+            quizData={quizData}
             onBackToList={() => setQuizCompleted(false)}
           />
         ) : (

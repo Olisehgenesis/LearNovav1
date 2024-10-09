@@ -64,7 +64,7 @@ export function useQuizToken() {
 
       // Approve tokens
       const approveResult = await walletClient.writeContract({
-        account,
+        account: await account(),
         address: QUIZ_TOKEN_ADDRESS,
         abi: QuizTokenABI,
         functionName: 'approve',
@@ -88,7 +88,7 @@ export function useQuizToken() {
           startTimestamp,
           endTimestamp,
         ],
-        account,
+        account: await account(),
       });
       
       const createResult = await walletClient.writeContract(request);
@@ -112,7 +112,7 @@ export function useQuizToken() {
         abi: QuizFactoryABI,
         functionName: 'attemptQuiz',
         args: [quizId, won],
-        account,
+        account: await account(),
       });
 
       const result = await walletClient.writeContract(request);
@@ -137,7 +137,7 @@ export function useQuizToken() {
           BigInt(Math.floor(newStartDate.getTime() / 1000)),
           BigInt(Math.floor(newEndDate.getTime() / 1000))
         ],
-        account,
+        account: await account(),
       });
 
       const result = await walletClient.writeContract(request);
@@ -156,7 +156,7 @@ export function useQuizToken() {
         abi: QuizFactoryABI,
         functionName: 'withdrawRemainingTokens',
         args: [quizId],
-        account,
+        account: await account(),
       });
 
       const result = await walletClient.writeContract(request);

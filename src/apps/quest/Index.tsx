@@ -81,7 +81,7 @@ function QuizzApp({ genAI }: QuizzAppProps) {
               </motion.div>
             )}
 
-            {stage === "results" && quizResults && (
+            {stage === "results" && quizResults && quizData && (
               <motion.div
                 key="results"
                 initial={{ opacity: 0, y: 20 }}
@@ -93,6 +93,7 @@ function QuizzApp({ genAI }: QuizzAppProps) {
                 <Results
                   results={quizResults}
                   onBackToList={handleBackToList}
+                  quizData={quizData}
                 />
               </motion.div>
             )}
