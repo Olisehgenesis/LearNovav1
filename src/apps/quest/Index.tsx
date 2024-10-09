@@ -1,38 +1,14 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import QuizPage from "./components/QuizPage";
 import Results from "./components/Results";
 import QuizCreationPage from "./components/QuizCreationPage";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { QuizData, QuizResults } from "./components/shared-types";
 
 // Define a type for the GenAI instance
 interface QuizzAppProps {
   genAI: GoogleGenerativeAI;
-}
-
-interface QuizQuestion {
-  id: number;
-  text: string;
-  options: Array<{
-    letter: string;
-    text: string;
-  }>;
-}
-
-interface QuizData {
-  questions: string | QuizQuestion[];
-  summary: string;
-}
-
-interface QuizResults {
-  score: number;
-  feedback: string;
-  questionFeedback: Array<{
-    id: number;
-    correct: boolean;
-    feedback: string;
-  }>;
-  userAnswers: Record<number, string>;
 }
 
 function QuizzApp({ genAI }: QuizzAppProps) {

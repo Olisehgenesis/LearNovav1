@@ -1,9 +1,9 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // Define a type for the GenAI instance
-type GenAIInstance = GoogleGenerativeAI | null;
+type GenAIInstance = GoogleGenerativeAI;
 
-let genAI: GenAIInstance = null;
+let genAI: GenAIInstance ;
 
 try {
     const apiKey = import.meta.env.VITE_GOOGLE_AI_API_KEY;
@@ -14,7 +14,7 @@ try {
     console.log("GenAI initialized successfully");
 } catch (error) {
     console.error("Error initializing GenAI:", error);
-    genAI = null;
+    throw error;
 }
 
 export { genAI };

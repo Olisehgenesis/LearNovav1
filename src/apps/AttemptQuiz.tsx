@@ -5,37 +5,10 @@ import { getQuizById, getDocumentById, saveQuizAttempt } from "../lib/db";
 import Quiz from "./quest/components/Quiz";
 import Results from "./quest/components/Results";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-
-// Define a type for the GenAI instance
-type GenAIInstance = GoogleGenerativeAI | null;
-interface QuizQuestion {
-  text: string;
-  options: string[];
-  correctAnswer: string;
-}
-
-interface QuizData {
-  id: number;
-  name: string;
-  questions: QuizQuestion[];
-  required_pass_score: number;
-  summary: string;
-  document_id: number;
-}
-
-interface QuizResults {
-  score: number;
-  feedback: string;
-  questionFeedback: Array<{
-    id: number;
-    correct: boolean;
-    feedback: string;
-  }>;
-  userAnswers: Record<number, string>;
-}
+import { QuizData, QuizResults } from "./quest/components/shared-types";
 
 interface AttemptQuizProps {
-  genAI: GenAIInstance;
+  genAI: GoogleGenerativeAI;
 }
 
 function AttemptQuiz({ genAI }: AttemptQuizProps) {
@@ -116,7 +89,10 @@ function AttemptQuiz({ genAI }: AttemptQuizProps) {
             genAI={genAI}
           />
         ) : quizCompleted && quizResults && quizData ? (
-          <Results results={quizResults} quizData={quizData} />
+          <Results
+            results={quizResults}
+            onBackToList={() => setQuizCompleted(false)}
+          />
         ) : (
           <div className="text-center mt-8">Error loading quiz data.</div>
         )}

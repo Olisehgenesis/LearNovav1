@@ -2,20 +2,7 @@ import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Trophy } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-
-interface QuizQuestion {
-  id: number;
-  text: string;
-  options: Array<{
-    letter: string;
-    text: string;
-  }>;
-}
-
-interface QuizData {
-  questions: string | QuizQuestion[];
-  summary: string;
-}
+import { QuizData, QuizQuestion } from "./shared-types";
 
 interface QuizProps {
   quizData: QuizData;

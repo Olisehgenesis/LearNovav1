@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { useQuizToken } from "../../token/hook/useQuizToken";
-import { useNavigate } from "react-router-dom";
 
 interface ResultsProps {
   results: {

@@ -1,36 +1,12 @@
 import { motion } from "framer-motion";
 import Quiz from "./Quiz";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-
-interface QuizData {
-  questions:
-    | string
-    | Array<{
-        id: number;
-        text: string;
-        options: Array<{
-          letter: string;
-          text: string;
-        }>;
-      }>;
-  summary: string;
-}
+import { QuizData, QuizResults } from "./shared-types";
 
 interface QuizPageProps {
   quizData: QuizData;
   genAI: GoogleGenerativeAI;
   onQuizCompleted: (results: QuizResults) => void;
-}
-
-interface QuizResults {
-  score: number;
-  feedback: string;
-  questionFeedback: Array<{
-    id: number;
-    correct: boolean;
-    feedback: string;
-  }>;
-  userAnswers: Record<number, string>;
 }
 
 function QuizPage({ quizData, genAI, onQuizCompleted }: QuizPageProps) {
