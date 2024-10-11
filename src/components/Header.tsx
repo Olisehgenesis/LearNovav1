@@ -4,7 +4,7 @@ import {
   HomeIcon,
   AcademicCapIcon,
   PlusCircleIcon,
-  UserIcon,
+  EnvelopeIcon,
   Bars3BottomLeftIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
@@ -12,6 +12,7 @@ import {
   Wallet,
   ConnectWallet,
   WalletDropdown,
+  WalletDropdownFundLink,
   WalletDropdownDisconnect,
 } from "@coinbase/onchainkit/wallet";
 import {
@@ -22,6 +23,7 @@ import {
   EthBalance,
 } from "@coinbase/onchainkit/identity";
 import { useAccount } from "wagmi";
+import TokenButton from "./tokenButton"; // Make sure this import path is correct
 
 function Header() {
   const location = useLocation();
@@ -36,29 +38,33 @@ function Header() {
     }
 
     return (
-      <Wallet>
-        <ConnectWallet>
-          {address ? (
-            <>
-              <Avatar address={address} className="h-6 w-6" />
-              <Name />
-            </>
-          ) : (
-            <span>Connect Wallet</span>
+      <div className="flex items-center space-x-2">
+        <TokenButton address={address as `0x${string}`} />
+        <Wallet>
+          <ConnectWallet>
+            {address ? (
+              <>
+                <Avatar address={address} className="h-6 w-6" />
+                <Name />
+              </>
+            ) : (
+              <span>Connect Wallet</span>
+            )}
+          </ConnectWallet>
+          {address && (
+            <WalletDropdown>
+              <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
+                <Avatar address={address} />
+                <Name />
+                <Address />
+                <EthBalance />
+              </Identity>
+              <WalletDropdownFundLink />
+              <WalletDropdownDisconnect />
+            </WalletDropdown>
           )}
-        </ConnectWallet>
-        {address && (
-          <WalletDropdown>
-            <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
-              <Avatar address={address} />
-              <Name />
-              <Address />
-              <EthBalance />
-            </Identity>
-            <WalletDropdownDisconnect />
-          </WalletDropdown>
-        )}
-      </Wallet>
+        </Wallet>
+      </div>
     );
   };
 
@@ -98,14 +104,19 @@ function Header() {
               <PlusCircleIcon className="w-5 h-5 mr-1" />
               Create Quest
             </NavLink>
-            <NavLink to="/profile" active={location.pathname === "/profile"}>
-              <UserIcon className="w-5 h-5 mr-1" />
-              Profile
+            <NavLink to="/contact" active={location.pathname === "/contact"}>
+              <EnvelopeIcon className="w-5 h-5 mr-1" />
+              Contact Us
             </NavLink>
           </nav>
 
-          {/* OnchainKit Wallet Component - hidden on mobile, shown on desktop */}
-          <div className="hidden md:block">{renderWalletButton()}</div>
+          {/* OnchainKit Wallet Component and Get LNT tokens button - hidden on mobile, shown on desktop */}
+          <div className="hidden md:flex items-center space-x-2">
+            {renderWalletButton()}
+            <button className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded">
+              Get LNT tokens
+            </button>
+          </div>
         </div>
 
         {/* Mobile menu */}
@@ -137,23 +148,26 @@ function Header() {
                 Create Quest
               </MobileNavLink>
               <MobileNavLink
-                to="/profile"
-                active={location.pathname === "/profile"}
+                to="/contact"
+                active={location.pathname === "/contact"}
                 onClick={toggleMenu}
               >
-                <UserIcon className="w-5 h-5 mr-2" />
-                Profile
+                <EnvelopeIcon className="w-5 h-5 mr-2" />
+                Contact Us
               </MobileNavLink>
             </nav>
-            <div className="mt-4">{renderWalletButton()}</div>
+            <div className="mt-4 space-y-2">
+              {renderWalletButton()}
+              <button className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded">
+                Get LNT tokens
+              </button>
+            </div>
           </div>
         )}
       </div>
     </header>
   );
 }
-
-// ... rest of the code (NavLink and MobileNavLink components) remains the same
 
 interface NavLinkProps {
   to: string;

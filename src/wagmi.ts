@@ -5,11 +5,12 @@ import { coinbaseWallet, injected, walletConnect } from 'wagmi/connectors'
 export const config = createConfig({
   chains: [sepolia],
   connectors: [
-    injected(),
+    
     coinbaseWallet({
       appName: "LearNova",  // Change this to your app name
       version: '4',  // Specify the version
     }),
+    injected(),
     walletConnect({
       projectId: import.meta.env.VITE_WC_PROJECT_ID,  // Use the environment variable for project ID
     }),

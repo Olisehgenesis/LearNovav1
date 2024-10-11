@@ -1,40 +1,58 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { getQuizzes } from "../lib/db";
+import {
+  ChevronRightIcon,
+  StarIcon,
+  UserGroupIcon,
+  TrophyIcon,
+} from "@heroicons/react/24/solid";
+
+interface Reward {
+  reward_name: string;
+  amount: number;
+}
 
 interface Quest {
+  id?: number;
+  blockId?: string;
+  name?: string;
+  questions?: string;
+  num_questions?: number;
+  required_pass_score?: number;
+  rewards?: Reward[];
+  start_date?: string;
+  end_date?: string;
+  cover_image_url?: string;
+  created_at?: string;
+  takerCount?: number;
+  winnerCount?: number;
+  active?: boolean;
+  total_rewards?: number;
+  reward_count?: number;
+}
+
+interface ParsedQuestion {
   id: number;
-  name: string;
-  blockId: string;
-  num_questions: number;
-  required_pass_score: number;
-  rewards: Array<{ reward_name: string; amount: number }>;
-  start_date: string;
-  end_date: string;
-  cover_image_url: string;
-  created_at: string;
-  total_rewards: number;
-  reward_count: number;
+  text: string;
+  options: string[];
 }
 
 function Home() {
   const navigate = useNavigate();
+  const [featuredQuest, setFeaturedQuest] = useState<Quest | null>(null);
   const [trendingQuests, setTrendingQuests] = useState<Quest[]>([]);
 
   useEffect(() => {
     const fetchQuests = async () => {
       try {
-        const quizzes = await getQuizzes();
-        // Sort quizzes by creation date and take the latest 3
-        const sortedQuizzes = quizzes
-          .sort(
-            (a, b) =>
-              new Date(b.created_at).getTime() -
-              new Date(a.created_at).getTime()
-          )
-          .slice(0, 3);
-        setTrendingQuests(sortedQuizzes);
+        const quizzes: Quest[] = await getQuizzes();
+        const sortedQuizzes = quizzes.sort(
+          (a, b) => (b.takerCount || 0) - (a.takerCount || 0)
+        );
+        setFeaturedQuest(sortedQuizzes[0] || null);
+        setTrendingQuests(sortedQuizzes.slice(1, 4));
       } catch (error) {
         console.error("Error fetching quests:", error);
       }
@@ -43,80 +61,185 @@ function Home() {
     fetchQuests();
   }, []);
 
+  const formatQuestions = (questions: string | undefined): ParsedQuestion[] => {
+    if (!questions) return [];
+    try {
+      const parsedQuestions = JSON.parse(questions);
+      if (Array.isArray(parsedQuestions)) {
+        return parsedQuestions.map((q: any) => ({
+          id: q.id,
+          text: q.text.replace(/^\*\*Question \d+:\*\*\s*/, ""),
+          options: q.options.slice(1), // Remove the question text from options
+        }));
+      }
+    } catch (error) {
+      console.error("Error parsing questions:", error);
+    }
+    return [];
+  };
+
+  const renderQuestion = (question: ParsedQuestion) => (
+    <div key={question.id} className="mb-4">
+      <p className="font-semibold">{question.text}</p>
+      <ul className="list-disc pl-5 mt-2">
+        {question.options.map((option, index) => (
+          <li key={index}>{option}</li>
+        ))}
+      </ul>
+    </div>
+  );
+
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
-      <motion.h1
-        initial={{ opacity: 0, y: -50 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-4xl font-bold text-center mb-8 text-indigo-700"
-      >
-        Welcome to LearNova
-      </motion.h1>
-
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2 }}
-        className="text-xl text-center mb-8"
-      >
-        AI-Powered Learning, Blockchain-Backed Rewards
-      </motion.p>
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-        className="bg-white shadow-lg rounded-lg p-6 mb-8"
-      >
-        <h2 className="text-2xl font-semibold mb-4">Why LearNova?</h2>
-        <ul className="list-disc pl-6 space-y-2">
-          <li>AI-generated quizzes tailored to your learning needs</li>
-          <li>Earn tokens for completing quests and demonstrating knowledge</li>
-          <li>Blockchain-powered certificates for verifiable achievements</li>
-          <li>Community-driven quest creation and curation</li>
-          <li>Learn, earn, and grow in the world of Web3 and beyond</li>
-        </ul>
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6 }}
-      >
-        <h2 className="text-2xl font-semibold mb-4">Trending Quests</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {trendingQuests.map((quest) => (
-            <div
-              key={quest.id}
-              className="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow"
-            >
-              <h3 className="font-semibold mb-2">
-                {quest.name || `Quest #${quest.id}`}
-              </h3>
-              <p className="text-sm text-gray-600">
-                Earn {quest.total_rewards.toFixed(2)} LRN Tokens
-              </p>
-              <p className="text-xs text-gray-500 mt-2">
-                Created: {new Date(quest.created_at).toLocaleDateString()}
-              </p>
-            </div>
-          ))}
-        </div>
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.8 }}
-        className="mt-8 text-center"
-      >
-        <button
-          onClick={() => navigate("/quests")}
-          className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors"
+    <div className="min-h-screen bg-gradient-to-br from-orange-100 to-green-100">
+      <div className="container mx-auto px-4 py-8">
+        <motion.div
+          initial={{ opacity: 0, y: -50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-center mb-12"
         >
-          Explore All Quests
-        </button>
-      </motion.div>
+          <h1 className="text-5xl font-extrabold text-orange-600 mb-4">
+            Embark on Your Learning Quest
+          </h1>
+          <p className="text-xl text-green-700">
+            Conquer challenges, earn rewards, and level up your knowledge
+          </p>
+        </motion.div>
+
+        {featuredQuest && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="bg-white rounded-xl shadow-2xl overflow-hidden mb-12"
+          >
+            <div className="md:flex">
+              <div className="md:flex-shrink-0">
+                <img
+                  className="h-64 w-full object-cover md:w-64"
+                  src={
+                    featuredQuest.cover_image_url ||
+                    "https://via.placeholder.com/256x256.png?text=Featured+Quest"
+                  }
+                  alt={featuredQuest.name}
+                />
+              </div>
+              <div className="p-8 flex-grow">
+                <div className="uppercase tracking-wide text-sm text-green-500 font-semibold">
+                  Featured Quest
+                </div>
+                <h2 className="mt-1 text-2xl font-bold text-orange-600">
+                  {featuredQuest.name}
+                </h2>
+                <div className="mt-4 text-gray-600">
+                  {formatQuestions(featuredQuest.questions)
+                    .slice(0, 1)
+                    .map(renderQuestion)}
+                </div>
+                <div className="mt-6 flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <span className="flex items-center">
+                      <UserGroupIcon className="h-5 w-5 text-green-500 mr-1" />
+                      {featuredQuest.takerCount} Questers
+                    </span>
+                    <span className="flex items-center">
+                      <TrophyIcon className="h-5 w-5 text-orange-500 mr-1" />
+                      {featuredQuest.winnerCount} Champions
+                    </span>
+                  </div>
+                  <button
+                    onClick={() =>
+                      navigate(`/attempt-quiz/${featuredQuest.id}`)
+                    }
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+                  >
+                    Start Quest
+                    <ChevronRightIcon
+                      className="ml-2 -mr-1 h-5 w-5"
+                      aria-hidden="true"
+                    />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+        >
+          <h2 className="text-3xl font-bold text-green-700 mb-8">
+            Trending Quests
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <AnimatePresence>
+              {trendingQuests.map((quest, index) => (
+                <motion.div
+                  key={quest.id}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ duration: 0.3, delay: index * 0.1 }}
+                  className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
+                >
+                  <img
+                    className="h-48 w-full object-cover"
+                    src={
+                      quest.cover_image_url ||
+                      "https://via.placeholder.com/384x192.png?text=Quest+Image"
+                    }
+                    alt={quest.name}
+                  />
+                  <div className="p-6">
+                    <h3 className="font-bold text-xl mb-2 text-orange-600">
+                      {quest.name}
+                    </h3>
+                    <div className="text-sm text-gray-600 mb-4 h-32 overflow-y-auto">
+                      {formatQuestions(quest.questions)
+                        .slice(0, 1)
+                        .map(renderQuestion)}
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center">
+                        <StarIcon className="h-5 w-5 text-yellow-400 mr-1" />
+                        <span className="text-sm text-gray-600">
+                          {quest.total_rewards?.toFixed(2)} LRN
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => navigate(`/attempt-quiz/${quest.id}`)}
+                        className="px-3 py-1 bg-green-500 text-white text-sm font-medium rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
+                      >
+                        View Quest
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.6 }}
+          className="mt-12 text-center"
+        >
+          <button
+            onClick={() => navigate("/quests")}
+            className="inline-flex items-center px-6 py-3 border border-transparent text-lg font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+          >
+            Explore All Quests
+            <ChevronRightIcon
+              className="ml-2 -mr-1 h-5 w-5"
+              aria-hidden="true"
+            />
+          </button>
+        </motion.div>
+      </div>
     </div>
   );
 }

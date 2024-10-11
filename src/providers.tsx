@@ -17,6 +17,7 @@ export function Providers({ children }: { children: ReactNode }) {
         <OnchainKitProvider
           apiKey={import.meta.env.VITE_ONCHAINKIT_API_KEY}
           chain={baseSepolia}
+          // projectId={process.env.VITE_WC_PROJECT_ID}
         >
           <RainbowKitProvider modalSize="compact">
             {children}
