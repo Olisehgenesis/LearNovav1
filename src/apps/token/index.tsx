@@ -16,7 +16,7 @@ import type {
   TransactionResponse,
 } from "@coinbase/onchainkit/transaction";
 import type { ContractFunctionParameters } from "viem";
-import { useAccount } from "wagmi";
+
 import { baseSepolia } from "wagmi/chains";
 
 import faucetABI from "./contracts/abi/faucetABI.json";
@@ -28,9 +28,6 @@ export default function FaucetClaimPage() {
     getLastClaimTime,
     getFaucetBalance,
   } = useFaucet();
-
-  const { address: userAddress } = useAccount();
-
   const [lastClaimTime, setLastClaimTime] = useState<Date | null>(null);
   const [faucetBalance, setFaucetBalance] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);

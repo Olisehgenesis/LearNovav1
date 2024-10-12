@@ -1,6 +1,20 @@
-import React, { useState } from "react";
+import React from "react";
 import { useQuizToken } from "../../token/hook/useQuizToken";
 import { QuizData } from "./shared-types";
+import {
+  Transaction,
+  TransactionButton,
+  TransactionStatus,
+  TransactionStatusLabel,
+  TransactionStatusAction,
+} from "@coinbase/onchainkit/transaction";
+import type {
+  TransactionError,
+  TransactionResponse,
+} from "@coinbase/onchainkit/transaction";
+import type { ContractFunctionParameters } from "viem";
+import { baseSepolia } from "wagmi/chains";
+import QuizFactoryABI from "../../token/contracts/abi/QuizFactoryABI.json";
 
 interface ResultsProps {
   results: {
@@ -22,30 +36,33 @@ const Results: React.FC<ResultsProps> = ({
   quizData,
   onBackToList,
 }) => {
-  const [isAwarding, setIsAwarding] = useState(false);
-  const [awardError, setAwardError] = useState<string | null>(null);
-  const { attemptQuiz } = useQuizToken();
+  const { userAddress } = useQuizToken();
 
-  // Since we don't have quizData, we'll need to adjust how we determine if the quiz is passed
   const isPassed = results.score >= 70; // You might want to adjust this threshold
 
-  const handleAwardReward = async () => {
-    setIsAwarding(true);
-    setAwardError(null);
-    try {
-      const quizId = BigInt(quizData.blockId ?? 1);
-      await attemptQuiz(quizId, true);
-      alert("Congratulations! You've been awarded the reward.");
-    } catch (error) {
-      console.error("Error awarding reward:", error);
-      setAwardError("Failed to award reward. Please try again.");
-    } finally {
-      setIsAwarding(false);
-    }
+  const QUIZ_FACTORY_ADDRESS = "0x2e026c70E43d76aA00040ECD85601fF47917C157";
+
+  const contracts = [
+    {
+      address: QUIZ_FACTORY_ADDRESS as `0x${string}`,
+      abi: QuizFactoryABI,
+      functionName: "attemptQuiz",
+      args: [BigInt(quizData.blockId ?? 1), true],
+    },
+  ] as unknown as ContractFunctionParameters[];
+
+  const handleError = (err: TransactionError) => {
+    console.error("Transaction error:", err);
+    alert("Failed to claim reward. Please try again.");
+  };
+
+  const handleSuccess = (response: TransactionResponse) => {
+    console.log("Transaction successful", response);
+    alert("Congratulations! You've been awarded the reward.");
+    window.location.href = "/";
   };
 
   const handleRetake = () => {
-    // Instead of navigating, we'll use the onBackToList prop
     onBackToList();
   };
 
@@ -78,13 +95,18 @@ const Results: React.FC<ResultsProps> = ({
       </ul>
       <div className="mt-8 flex justify-center">
         {isPassed ? (
-          <button
-            onClick={handleAwardReward}
-            disabled={isAwarding}
-            className="bg-green-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-600 disabled:bg-green-300 transition duration-300 ease-in-out transform hover:-translate-y-1"
+          <Transaction
+            chainId={baseSepolia.id}
+            contracts={contracts}
+            onError={handleError}
+            onSuccess={handleSuccess}
           >
-            {isAwarding ? "Processing..." : "Claim Prize"}
-          </button>
+            <TransactionButton text="Claim Prize"></TransactionButton>
+            <TransactionStatus>
+              <TransactionStatusLabel />
+              <TransactionStatusAction />
+            </TransactionStatus>
+          </Transaction>
         ) : (
           <button
             onClick={handleRetake}
@@ -94,9 +116,6 @@ const Results: React.FC<ResultsProps> = ({
           </button>
         )}
       </div>
-      {awardError && (
-        <p className="text-red-500 mt-4 text-center">{awardError}</p>
-      )}
     </div>
   );
 };
