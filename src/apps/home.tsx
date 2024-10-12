@@ -78,16 +78,29 @@ function Home() {
     return [];
   };
 
-  const renderQuestion = (question: ParsedQuestion) => (
-    <div key={question.id} className="mb-4">
-      <p className="font-semibold">{question.text}</p>
-      <ul className="list-disc pl-5 mt-2">
-        {question.options.map((option, index) => (
-          <li key={index}>{option}</li>
-        ))}
-      </ul>
-    </div>
-  );
+  const renderQuestion = (question: ParsedQuestion) => {
+    console.log("Rendering question:", question); // Add this line
+    if (!question || typeof question !== "object") {
+      console.error("Invalid question object:", question);
+      return null;
+    }
+    return (
+      <>
+        <div key={question.id} className="mb-4">
+          <p className="font-semibold">{question.text}</p>
+          <ul className="list-disc pl-5 mt-2">
+            {Array.isArray(question.options) ? (
+              question.options.map((option, index) => (
+                <li key={index}>{option}</li>
+              ))
+            ) : (
+              <li>No options available</li>
+            )}
+          </ul>
+        </div>
+      </>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-100 to-green-100">
@@ -132,9 +145,13 @@ function Home() {
                   {featuredQuest.name}
                 </h2>
                 <div className="mt-4 text-gray-600">
-                  {formatQuestions(featuredQuest.questions)
-                    .slice(0, 1)
-                    .map(renderQuestion)}
+                  {/* {Array.isArray(formatQuestions(featuredQuest.questions)) ? (
+                    formatQuestions(featuredQuest.questions)
+                      .slice(0, 1)
+                      .map(renderQuestion)
+                  ) : (
+                    <p>No questions available</p>
+                  )} */}
                 </div>
                 <div className="mt-6 flex items-center justify-between">
                   <div className="flex items-center space-x-4">

@@ -1,4 +1,4 @@
-import React, { useState, ChangeEvent, useCallback } from "react";
+import React, { useState, ChangeEvent } from "react";
 import {
   Button,
   Input,
@@ -26,6 +26,7 @@ import type {
   TransactionResponse,
 } from "@coinbase/onchainkit/transaction";
 import type { ContractFunctionParameters } from "viem";
+import { formatEther, parseEther, decodeEventLog } from "viem";
 import { baseSepolia } from "wagmi/chains";
 import QuizFactoryABI from "../../token/contracts/abi/QuizFactoryABI.json";
 
@@ -75,6 +76,7 @@ const QuizCreationPage: React.FC<QuizCreationPageProps> = ({
   const [blockchainQuizId, setBlockchainQuizId] = useState<number | null>(null);
 
   const creationFee = 50;
+  const QUIZ_FACTORY_ADDRESS = "0x2e026c70E43d76aA00040ECD85601fF47917C157";
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -119,17 +121,15 @@ const QuizCreationPage: React.FC<QuizCreationPageProps> = ({
     }));
   };
 
-  const QUIZ_FACTORY_ADDRESS = "0x2e026c70E43d76aA00040ECD85601fF47917C157";
-
-  const calculateTotalCost = useCallback(() => {
+  const calculateTotalCost = () => {
     const rewardSum = quizData.rewards.reduce(
       (sum, reward) => sum + Number(reward.amount),
       0
     );
     return creationFee + rewardSum;
-  }, [quizData.rewards, creationFee]);
+  };
 
-  const generateContracts = useCallback(() => {
+  const generateContracts = () => {
     const totalCost = calculateTotalCost();
     const startTimestamp = new Date(quizData.startDate).getTime();
     const endTimestamp = new Date(quizData.endDate).getTime();
@@ -145,14 +145,14 @@ const QuizCreationPage: React.FC<QuizCreationPageProps> = ({
         functionName: "createQuiz",
         args: [
           quizData.name,
-          BigInt(Math.floor(totalCost * 1e18)), // Convert to wei
-          BigInt(0), // Set taker limit to 0 (unlimited)
+          parseEther(totalCost.toString()), // Convert to wei
+          BigInt(1000), // Set taker limit to 0 (unlimited)
           BigInt(Math.floor(startTimestamp / 1000)),
           BigInt(Math.floor(endTimestamp / 1000)),
         ],
       },
-    ] as unknown as ContractFunctionParameters[];
-  }, [quizData, calculateTotalCost]);
+    ] as const;
+  };
 
   const handleBlockchainError = (err: TransactionError) => {
     console.error("Blockchain transaction error:", err);
@@ -571,13 +571,11 @@ const QuizCreationPage: React.FC<QuizCreationPageProps> = ({
             {!isBlockchainQuizCreated ? (
               <Transaction
                 chainId={baseSepolia.id}
-                contracts={generateContracts}
+                contracts={generateContracts()}
                 onError={handleBlockchainError}
                 onSuccess={handleBlockchainSuccess}
               >
-                <TransactionButton className="ml-auto font-bold shadow-2xl hover:shadow-lg transition duration-300 bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded disabled:opacity-50">
-                  Create Blockchain Quiz
-                </TransactionButton>
+                <TransactionButton text="Create Blockchain Quiz" />
                 <TransactionStatus>
                   <TransactionStatusLabel />
                   <TransactionStatusAction />
