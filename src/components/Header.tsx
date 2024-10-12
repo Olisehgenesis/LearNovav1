@@ -7,6 +7,7 @@ import {
   EnvelopeIcon,
   Bars3BottomLeftIcon,
   XMarkIcon,
+  GiftIcon,
 } from "@heroicons/react/24/outline";
 import {
   Wallet,
@@ -23,7 +24,7 @@ import {
   EthBalance,
 } from "@coinbase/onchainkit/identity";
 import { useAccount } from "wagmi";
-import TokenButton from "./tokenButton"; // Make sure this import path is correct
+import TokenButton from "./tokenButton";
 
 function Header() {
   const location = useLocation();
@@ -34,7 +35,7 @@ function Header() {
 
   const renderWalletButton = () => {
     if (isConnecting) {
-      return <div className="text-sm">Connecting...</div>;
+      return <div className="text-sm font-medium">Connecting...</div>;
     }
 
     return (
@@ -43,24 +44,24 @@ function Header() {
         <Wallet>
           <ConnectWallet>
             {address ? (
-              <>
-                <Avatar address={address} className="h-6 w-6" />
-                <Name />
-              </>
+              <div className="flex items-center space-x-2">
+                <Avatar address={address} className="h-8 w-8" />
+                <Name className="text-sm font-medium" />
+              </div>
             ) : (
-              <span>Connect Wallet</span>
+              <span className="text-sm font-medium">Connect Wallet</span>
             )}
           </ConnectWallet>
           {address && (
             <WalletDropdown>
               <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
-                <Avatar address={address} />
-                <Name />
-                <Address />
-                <EthBalance />
+                <Avatar address={address} className="h-12 w-12 mx-auto mb-2" />
+                <Name className="text-center font-bold" />
+                <Address className="text-center text-sm" />
+                <EthBalance className="text-center text-sm font-medium mt-2" />
               </Identity>
-              <WalletDropdownFundLink />
-              <WalletDropdownDisconnect />
+              <WalletDropdownFundLink className="w-full text-center py-2 hover:bg-gray-100" />
+              <WalletDropdownDisconnect className="w-full text-center py-2 hover:bg-gray-100 text-red-500" />
             </WalletDropdown>
           )}
         </Wallet>
@@ -72,12 +73,12 @@ function Header() {
     <header className="bg-gradient-to-r from-orange-500 to-green-500 text-white shadow-lg">
       <div className="container mx-auto px-4 py-4">
         <div className="flex justify-between items-center">
-          {/* Left section with title */}
-          <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
-            Lear<span className="text-orange-200">Nova</span>
-          </h1>
+          <Link to="/" className="flex items-center space-x-2">
+            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
+              Lear<span className="text-orange-200">Nova</span>
+            </h1>
+          </Link>
 
-          {/* Mobile menu button */}
           <button
             className="md:hidden p-2"
             onClick={toggleMenu}
@@ -90,8 +91,7 @@ function Header() {
             )}
           </button>
 
-          {/* Desktop navigation */}
-          <nav className="hidden md:flex space-x-2">
+          <nav className="hidden md:flex space-x-4">
             <NavLink to="/" active={location.pathname === "/"}>
               <HomeIcon className="w-5 h-5 mr-1" />
               Home
@@ -110,18 +110,21 @@ function Header() {
             </NavLink>
           </nav>
 
-          {/* OnchainKit Wallet Component and Get LNT tokens button - hidden on mobile, shown on desktop */}
-          <div className="hidden md:flex items-center space-x-2">
+          <div className="hidden md:flex items-center space-x-4">
             {renderWalletButton()}
-            <button className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded">
+
+            <NavLink to="/claim" active={location.pathname === "/claim"}>
+              <GiftIcon className="w-5 h-5 mr-1" />
+              Claim Free
+            </NavLink>
+            <button className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out transform hover:scale-105">
               Get LNT tokens
             </button>
           </div>
         </div>
 
-        {/* Mobile menu */}
         {isMenuOpen && (
-          <div className="md:hidden mt-4">
+          <div className="md:hidden mt-4 bg-white rounded-lg shadow-lg p-4">
             <nav className="flex flex-col space-y-2">
               <MobileNavLink
                 to="/"
@@ -155,10 +158,18 @@ function Header() {
                 <EnvelopeIcon className="w-5 h-5 mr-2" />
                 Contact Us
               </MobileNavLink>
+              <MobileNavLink
+                to="/claim"
+                active={location.pathname === "/claim"}
+                onClick={toggleMenu}
+              >
+                <GiftIcon className="w-5 h-5 mr-2" />
+                Claim Free
+              </MobileNavLink>
             </nav>
             <div className="mt-4 space-y-2">
               {renderWalletButton()}
-              <button className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded">
+              <button className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out">
                 Get LNT tokens
               </button>
             </div>
@@ -183,7 +194,7 @@ function NavLink({ to, children, active }: NavLinkProps) {
       ${
         active
           ? "bg-white text-orange-500"
-          : "hover:bg-green-600 hover:text-white"
+          : "text-white hover:bg-green-600 hover:text-white"
       }
       focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-orange-500 focus:ring-white`}
     >
@@ -205,8 +216,8 @@ function MobileNavLink({
       className={`flex items-center px-4 py-2 rounded-lg text-base font-medium transition-colors duration-300
       ${
         active
-          ? "bg-white text-orange-500"
-          : "hover:bg-green-600 hover:text-white"
+          ? "bg-orange-100 text-orange-500"
+          : "text-gray-700 hover:bg-green-100 hover:text-green-700"
       }`}
     >
       {children}

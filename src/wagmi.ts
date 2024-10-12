@@ -7,7 +7,8 @@ export const config = createConfig({
   connectors: [
     
     coinbaseWallet({
-      appName: "LearNova",  // Change this to your app name
+      appName: "LearNova",
+      preference: 'smartWalletOnly',
       version: '4',  // Specify the version
     }),
     injected(),

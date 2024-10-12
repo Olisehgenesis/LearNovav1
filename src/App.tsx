@@ -7,6 +7,7 @@ import ErrorBoundary from "./ErrorBoundary";
 import { genAI } from "./lib/genAI";
 import QuestBrowser from "./apps/QuestBrowser";
 import AttemptQuiz from "./apps/AttemptQuiz";
+import FaucetClaimPage from "./apps/token/index";
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
                 path="/attempt-quiz/:id"
                 element={<AttemptQuiz genAI={genAI} />}
               />
+              <Route path="/claim" element={<FaucetClaimPage />} />
             </Routes>
           </main>
         </div>

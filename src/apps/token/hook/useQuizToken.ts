@@ -24,6 +24,7 @@ export function useQuizToken() {
             args: [userAddress],
           }) as bigint;
           setUserBalance(formatEther(balanceData));
+          console.log('Balance:', balanceData);
         } catch (error) {
           console.error('Error fetching balance:', error);
           setUserBalance(null);
