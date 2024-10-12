@@ -1,4 +1,4 @@
-import React, { useState, ChangeEvent, useCallback } from "react";
+import React, { useState, ChangeEvent } from "react";
 import {
   Button,
   Input,
@@ -14,20 +14,6 @@ import {
 import { saveDocument, saveQuiz, saveReward } from "../../../lib/db";
 import { useQuizToken } from "../../token/hook/useQuizToken";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import {
-  Transaction,
-  TransactionButton,
-  TransactionStatus,
-  TransactionStatusLabel,
-  TransactionStatusAction,
-} from "@coinbase/onchainkit/transaction";
-import type {
-  TransactionError,
-  TransactionResponse,
-} from "@coinbase/onchainkit/transaction";
-import type { ContractFunctionParameters } from "viem";
-import { baseSepolia } from "wagmi/chains";
-import QuizFactoryABI from "../../token/contracts/abi/QuizFactoryABI.json";
 
 interface QuizData {
   questions:
@@ -53,7 +39,12 @@ const QuizCreationPage: React.FC<QuizCreationPageProps> = ({
   onQuizCreated,
 }) => {
   const [step, setStep] = useState(1);
-  const { ensName, userAddress, userBalance } = useQuizToken();
+  const {
+    ensName,
+    userAddress,
+    userBalance,
+    createQuiz: createBlockchainQuiz,
+  } = useQuizToken();
   const [quizData, setQuizData] = useState({
     name: "",
     startDate: "",
@@ -71,8 +62,6 @@ const QuizCreationPage: React.FC<QuizCreationPageProps> = ({
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isBlockchainQuizCreated, setIsBlockchainQuizCreated] = useState(false);
-  const [blockchainQuizId, setBlockchainQuizId] = useState<number | null>(null);
 
   const creationFee = 50;
 
@@ -119,61 +108,18 @@ const QuizCreationPage: React.FC<QuizCreationPageProps> = ({
     }));
   };
 
-  const QUIZ_FACTORY_ADDRESS = "0x2e026c70E43d76aA00040ECD85601fF47917C157";
-
-  const calculateTotalCost = useCallback(() => {
-    const rewardSum = quizData.rewards.reduce(
-      (sum, reward) => sum + Number(reward.amount),
-      0
-    );
-    return creationFee + rewardSum;
-  }, [quizData.rewards, creationFee]);
-
-  const generateContracts = useCallback(() => {
-    const totalCost = calculateTotalCost();
-    const startTimestamp = new Date(quizData.startDate).getTime();
-    const endTimestamp = new Date(quizData.endDate).getTime();
-
-    if (isNaN(totalCost) || isNaN(startTimestamp) || isNaN(endTimestamp)) {
-      throw new Error("Invalid quiz data. Please check all fields.");
-    }
-
-    return [
-      {
-        address: QUIZ_FACTORY_ADDRESS as `0x${string}`,
-        abi: QuizFactoryABI,
-        functionName: "createQuiz",
-        args: [
-          quizData.name,
-          BigInt(Math.floor(totalCost * 1e18)), // Convert to wei
-          BigInt(0), // Set taker limit to 0 (unlimited)
-          BigInt(Math.floor(startTimestamp / 1000)),
-          BigInt(Math.floor(endTimestamp / 1000)),
-        ],
-      },
-    ] as unknown as ContractFunctionParameters[];
-  }, [quizData, calculateTotalCost]);
-
-  const handleBlockchainError = (err: TransactionError) => {
-    console.error("Blockchain transaction error:", err);
-    setError("Failed to create quiz on blockchain. Please try again.");
-  };
-
-  const handleBlockchainSuccess = (response: TransactionResponse) => {
-    console.log("Blockchain transaction successful", response);
-    // Extract quizId from the transaction response
-    const quizId = Number(response.logs[0].args?.quizId);
-    setBlockchainQuizId(quizId);
-    setIsBlockchainQuizCreated(true);
-  };
-
   const handleSubmit = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      if (!isBlockchainQuizCreated || blockchainQuizId === null) {
-        throw new Error("Blockchain quiz not created yet");
-      }
+      // Create quiz on blockchain
+      const blockchainQuizId = await createBlockchainQuiz(
+        quizData.name,
+        totalCost.toString(),
+        0, // Set taker limit to 0 (unlimited)
+        quizData.startDate,
+        quizData.endDate
+      );
 
       let quizContent = quizData.quizContent;
       if (quizData.quizFile) {
@@ -224,14 +170,13 @@ const QuizCreationPage: React.FC<QuizCreationPageProps> = ({
           options: options.map((opt) => opt.substring(3)),
         };
       });
-
       // Save document
       const documentId = await saveDocument(quizContent, summary);
 
       // Save quiz
       const savedQuiz = await saveQuiz({
         name: quizData.name,
-        documentId: documentId as number,
+        documentId: documentId as number, // Ensure documentId is a number
         questions: JSON.stringify(questions),
         numQuestions: quizData.numQuestions,
         limitTakers: quizData.limitTakers,
@@ -254,6 +199,9 @@ const QuizCreationPage: React.FC<QuizCreationPageProps> = ({
         summary: summary,
       });
 
+      // Navigate to quiz browser
+      // window.location.href = "/quests";
+
       console.log("Quiz created successfully with ID:", savedQuiz.id);
     } catch (err) {
       console.error("Error creating quiz:", err);
@@ -262,7 +210,6 @@ const QuizCreationPage: React.FC<QuizCreationPageProps> = ({
       setIsLoading(false);
     }
   };
-
   const readFileContent = (file: Blob) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -271,6 +218,10 @@ const QuizCreationPage: React.FC<QuizCreationPageProps> = ({
       reader.readAsText(file);
     });
   };
+
+  const totalCost =
+    creationFee +
+    quizData.rewards.reduce((sum, reward) => sum + Number(reward.amount), 0);
 
   if (isLoading) {
     return (
@@ -567,36 +518,21 @@ const QuizCreationPage: React.FC<QuizCreationPageProps> = ({
             Next
           </Button>
         ) : (
-          <>
-            {!isBlockchainQuizCreated ? (
-              <Transaction
-                chainId={baseSepolia.id}
-                contracts={generateContracts}
-                onError={handleBlockchainError}
-                onSuccess={handleBlockchainSuccess}
-              >
-                <TransactionButton className="ml-auto font-bold shadow-2xl hover:shadow-lg transition duration-300 bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded disabled:opacity-50">
-                  Create Blockchain Quiz
-                </TransactionButton>
-                <TransactionStatus>
-                  <TransactionStatusLabel />
-                  <TransactionStatusAction />
-                </TransactionStatus>
-              </Transaction>
+          <Button
+            onClick={handleSubmit}
+            disabled={
+              isLoading ||
+              !userAddress ||
+              (userBalance !== null && parseFloat(userBalance) < totalCost)
+            }
+            className="ml-auto font-bold shadow-2xl hover:shadow-lg transition duration-300 bg-gray-800 text-white border border-gray-600 py-3 px-6 rounded disabled:opacity-50"
+          >
+            {isLoading ? (
+              <CircularProgress size={24} color="inherit" />
             ) : (
-              <Button
-                onClick={handleSubmit}
-                disabled={isLoading}
-                className="ml-auto font-bold shadow-2xl hover:shadow-lg transition duration-300 bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded disabled:opacity-50"
-              >
-                {isLoading ? (
-                  <CircularProgress size={24} color="inherit" />
-                ) : (
-                  "Complete Quiz Creation"
-                )}
-              </Button>
+              `Create Quiz (${totalCost} LLT)`
             )}
-          </>
+          </Button>
         )}
       </div>
 
@@ -610,7 +546,7 @@ const QuizCreationPage: React.FC<QuizCreationPageProps> = ({
       <Alert className="mt-6" severity="info">
         <AlertTitle>Note</AlertTitle>
         Creating a quiz requires a fee of {creationFee} LLT tokens, plus the
-        total reward amount. Total cost: {calculateTotalCost()} LLT
+        total reward amount. Total cost: {totalCost} LLT
       </Alert>
     </div>
   );
