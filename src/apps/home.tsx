@@ -144,15 +144,7 @@ function Home() {
                 <h2 className="mt-1 text-2xl font-bold text-orange-600">
                   {featuredQuest.name}
                 </h2>
-                <div className="mt-4 text-gray-600">
-                  {/* {Array.isArray(formatQuestions(featuredQuest.questions)) ? (
-                    formatQuestions(featuredQuest.questions)
-                      .slice(0, 1)
-                      .map(renderQuestion)
-                  ) : (
-                    <p>No questions available</p>
-                  )} */}
-                </div>
+                <div className="mt-4 text-gray-600"></div>
                 <div className="mt-6 flex items-center justify-between">
                   <div className="flex items-center space-x-4">
                     <span className="flex items-center">

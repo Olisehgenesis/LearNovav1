@@ -38,7 +38,7 @@ const Results: React.FC<ResultsProps> = ({
 }) => {
   const { userAddress } = useQuizToken();
 
-  const isPassed = results.score >= 70; // You might want to adjust this threshold
+  const isPassed = results.score >= 80; // You might want to adjust this threshold
 
   const QUIZ_FACTORY_ADDRESS = "0x2e026c70E43d76aA00040ECD85601fF47917C157";
 
