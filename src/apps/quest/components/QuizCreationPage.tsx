@@ -1,5 +1,4 @@
-import React, { useState, ChangeEvent, useCallback, useMemo } from "react";
-import { decodeEventLog } from "viem";
+import React, { useState, ChangeEvent } from "react";
 import {
   Button,
   Input,
@@ -27,6 +26,7 @@ import type {
   TransactionResponse,
 } from "@coinbase/onchainkit/transaction";
 import type { ContractFunctionParameters } from "viem";
+import { formatEther, parseEther, decodeEventLog } from "viem";
 import { baseSepolia } from "wagmi/chains";
 import QuizFactoryABI from "../../token/contracts/abi/QuizFactoryABI.json";
 
@@ -74,14 +74,9 @@ const QuizCreationPage: React.FC<QuizCreationPageProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isBlockchainQuizCreated, setIsBlockchainQuizCreated] = useState(false);
   const [blockchainQuizId, setBlockchainQuizId] = useState<number | null>(null);
-  const [isTokenApproved, setIsTokenApproved] = useState(false);
-  const [isApprovalInProgress, setIsApprovalInProgress] = useState(false);
-  const [isQuizCreationInProgress, setIsQuizCreationInProgress] =
-    useState(false);
 
   const creationFee = 50;
   const QUIZ_FACTORY_ADDRESS = "0x2e026c70E43d76aA00040ECD85601fF47917C157";
-  const QUIZ_TOKEN_ADDRESS = "0x270B4190DD62De9fbb48Cd71C6B052f5924d4FcC";
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -126,139 +121,50 @@ const QuizCreationPage: React.FC<QuizCreationPageProps> = ({
     }));
   };
 
-  const calculateTotalCost = useCallback(() => {
+  const calculateTotalCost = () => {
     const rewardSum = quizData.rewards.reduce(
       (sum, reward) => sum + Number(reward.amount),
       0
     );
     return creationFee + rewardSum;
-  }, [quizData.rewards, creationFee]);
-
-  const generateContracts = useCallback(
-    (isApproval: boolean) => {
-      const totalCost = calculateTotalCost();
-      const startTimestamp = quizData.startDate
-        ? new Date(quizData.startDate).getTime()
-        : 0;
-      const endTimestamp = quizData.endDate
-        ? new Date(quizData.endDate).getTime()
-        : 0;
-
-      // Check if required fields are filled before generating contracts
-      if (!quizData.name || !startTimestamp || !endTimestamp) {
-        return null; // Return null if required fields are not filled
-      }
-
-      if (isApproval) {
-        return [
-          {
-            address: QUIZ_TOKEN_ADDRESS as `0x${string}`,
-            abi: [
-              {
-                inputs: [
-                  { internalType: "address", name: "spender", type: "address" },
-                  { internalType: "uint256", name: "amount", type: "uint256" },
-                ],
-                name: "approve",
-                outputs: [{ internalType: "bool", name: "", type: "bool" }],
-                stateMutability: "nonpayable",
-                type: "function",
-              },
-            ],
-            functionName: "approve",
-
-            args: [
-              QUIZ_FACTORY_ADDRESS as `0x${string}`,
-              BigInt(Math.floor(totalCost * 1e18)),
-            ],
-          },
-        ] as unknown as ContractFunctionParameters[];
-      } else {
-        return [
-          {
-            address: QUIZ_FACTORY_ADDRESS as `0x${string}`,
-            abi: QuizFactoryABI,
-            functionName: "createQuiz",
-            args: [
-              quizData.name,
-              BigInt(Math.floor(totalCost * 1e18)),
-              BigInt(0), // Set taker limit to 0 (unlimited)
-              BigInt(Math.floor(startTimestamp / 1000)),
-              BigInt(Math.floor(endTimestamp / 1000)),
-            ],
-          },
-        ] as unknown as ContractFunctionParameters[];
-      }
-    },
-    [quizData, calculateTotalCost]
-  );
-
-  const approvalContracts = useMemo(
-    () => generateContracts(true),
-    [generateContracts]
-  );
-  const quizCreationContracts = useMemo(
-    () => generateContracts(false),
-    [generateContracts]
-  );
-
-  const handleApprovalError = (err: TransactionError) => {
-    console.error("Token approval error:", err);
-    setError("Failed to approve token spending. Please try again.");
-    setIsApprovalInProgress(false);
   };
 
-  const handleApprovalSuccess = (response: TransactionResponse) => {
-    console.log("Token approval successful", response);
-    setIsTokenApproved(true);
-    setIsApprovalInProgress(false);
-  };
+  const generateContracts = () => {
+    const totalCost = calculateTotalCost();
+    const startTimestamp = new Date(quizData.startDate).getTime();
+    const endTimestamp = new Date(quizData.endDate).getTime();
 
-  const handleQuizCreationError = (err: TransactionError) => {
-    console.error("Quiz creation error:", err);
-    setError("Failed to create quiz on blockchain. Please try again.");
-    setIsQuizCreationInProgress(false);
-  };
-
-  const handleQuizCreationSuccess = (response: TransactionResponse) => {
-    console.log("Quiz creation successful", response);
-    let quizId: number | null = null;
-
-    if (
-      response.transactionReceipts &&
-      response.transactionReceipts[0] &&
-      response.transactionReceipts[0].logs
-    ) {
-      const quizCreatedLog = response.transactionReceipts[0].logs.find(
-        (log) => {
-          try {
-            const decodedLog = decodeEventLog({
-              abi: QuizFactoryABI,
-              data: log.data,
-              topics: log.topics,
-            }) as { eventName: string; args: any };
-
-            if (decodedLog.eventName === "QuizCreated" && decodedLog.args) {
-              quizId = Number(decodedLog.args.quizId);
-            }
-            return decodedLog.eventName === "QuizCreated";
-          } catch {
-            return false;
-          }
-        }
-      );
-
-      if (quizCreatedLog && quizId !== null) {
-        setBlockchainQuizId(quizId);
-        setIsBlockchainQuizCreated(true);
-      } else {
-        console.error("Failed to extract quizId from transaction logs");
-        setError(
-          "Failed to extract quiz ID from transaction. Please check and try again."
-        );
-      }
+    if (isNaN(totalCost) || isNaN(startTimestamp) || isNaN(endTimestamp)) {
+      throw new Error("Invalid quiz data. Please check all fields.");
     }
-    setIsQuizCreationInProgress(false);
+
+    return [
+      {
+        address: QUIZ_FACTORY_ADDRESS as `0x${string}`,
+        abi: QuizFactoryABI,
+        functionName: "createQuiz",
+        args: [
+          quizData.name,
+          parseEther(totalCost.toString()), // Convert to wei
+          BigInt(1000), // Set taker limit to 0 (unlimited)
+          BigInt(Math.floor(startTimestamp / 1000)),
+          BigInt(Math.floor(endTimestamp / 1000)),
+        ],
+      },
+    ] as const;
+  };
+
+  const handleBlockchainError = (err: TransactionError) => {
+    console.error("Blockchain transaction error:", err);
+    setError("Failed to create quiz on blockchain. Please try again.");
+  };
+
+  const handleBlockchainSuccess = (response: TransactionResponse) => {
+    console.log("Blockchain transaction successful", response);
+    // Extract quizId from the transaction response
+    const quizId = Number(response.logs[0].args?.quizId);
+    setBlockchainQuizId(quizId);
+    setIsBlockchainQuizCreated(true);
   };
 
   const handleSubmit = async () => {
@@ -382,6 +288,7 @@ const QuizCreationPage: React.FC<QuizCreationPageProps> = ({
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-4xl font-bold mb-6">Create New Quiz</h1>
+      {/* User Info */}
       <Alert className="mb-4" severity="info">
         <AlertTitle>Your Information</AlertTitle>
         <p>Address: {userAddress}</p>
@@ -389,6 +296,7 @@ const QuizCreationPage: React.FC<QuizCreationPageProps> = ({
         <p>Balance: {userBalance} LLT</p>
       </Alert>
 
+      {/* Step Indicator */}
       <div className="flex mb-2">
         <div className="relative w-full h-2 bg-gray-600 rounded">
           <div
@@ -422,6 +330,7 @@ const QuizCreationPage: React.FC<QuizCreationPageProps> = ({
         </span>
       </div>
 
+      {/* Step 1: Quiz Details */}
       {step === 1 && (
         <Card className="shadow-lg mb-6">
           <CardContent className="p-8">
@@ -513,6 +422,7 @@ const QuizCreationPage: React.FC<QuizCreationPageProps> = ({
         </Card>
       )}
 
+      {/* Step 2: Quiz Rewards */}
       {step === 2 && (
         <Card className="shadow-lg mb-6">
           <CardContent className="p-8">
@@ -572,6 +482,7 @@ const QuizCreationPage: React.FC<QuizCreationPageProps> = ({
         </Card>
       )}
 
+      {/* Step 3: Quiz Content */}
       {step === 3 && (
         <Card className="shadow-lg mb-6">
           <CardContent className="p-8">
@@ -657,41 +568,20 @@ const QuizCreationPage: React.FC<QuizCreationPageProps> = ({
           </Button>
         ) : (
           <>
-            {!isTokenApproved && (
+            {!isBlockchainQuizCreated ? (
               <Transaction
                 chainId={baseSepolia.id}
-                contracts={approvalContracts ?? []}
-                onError={handleApprovalError}
-                onSuccess={handleApprovalSuccess}
+                contracts={generateContracts()}
+                onError={handleBlockchainError}
+                onSuccess={handleBlockchainSuccess}
               >
-                <TransactionButton
-                  text="Approve Token Spending"
-                  disabled={isApprovalInProgress}
-                />
+                <TransactionButton text="Create Blockchain Quiz" />
                 <TransactionStatus>
                   <TransactionStatusLabel />
                   <TransactionStatusAction />
                 </TransactionStatus>
               </Transaction>
-            )}
-            {isTokenApproved && !isBlockchainQuizCreated && (
-              <Transaction
-                chainId={baseSepolia.id}
-                contracts={quizCreationContracts ?? []}
-                onError={handleQuizCreationError}
-                onSuccess={handleQuizCreationSuccess}
-              >
-                <TransactionButton
-                  text="Create Blockchain Quiz"
-                  disabled={isQuizCreationInProgress}
-                />
-                <TransactionStatus>
-                  <TransactionStatusLabel />
-                  <TransactionStatusAction />
-                </TransactionStatus>
-              </Transaction>
-            )}
-            {isBlockchainQuizCreated && (
+            ) : (
               <Button
                 onClick={handleSubmit}
                 disabled={isLoading}
