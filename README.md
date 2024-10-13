@@ -68,7 +68,8 @@ VITE_SUPABASE_KEY=your_supabase_key
 The project uses two main smart contracts:
 
 - Token Contract: `0xD31b5bED7ba6e427BBc9516041CC8B9B3EC13725`
-- Quiz Factory Contract: `0xB81c6a996971bE1Ae1246cb921E84a73de67FF94`
+- Quiz Factory Contract: `0x2e026c70E43d76aA00040ECD85601fF47917C157`
+- faucet: `0x644851C0E02831537A7e8B3C80e799e06CFdA1ff`
 
 These contracts are currently deployed on the Base Sepolia testnet.
 
