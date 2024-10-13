@@ -1,4 +1,4 @@
-import React, { useState, ChangeEvent } from "react";
+import React, { useState, useMemo, ChangeEvent } from "react";
 import {
   Button,
   Input,
@@ -25,9 +25,8 @@ import type {
   TransactionError,
   TransactionResponse,
 } from "@coinbase/onchainkit/transaction";
-import { parseEther } from "viem";
+import { Abi, parseEther, ContractFunctionParameters } from "viem";
 import { baseSepolia } from "wagmi/chains";
-import QuizFactoryABI from "../../token/contracts/abi/QuizFactoryABI.json";
 
 interface QuizData {
   questions:
@@ -47,6 +46,36 @@ interface QuizCreationPageProps {
   genAI: GoogleGenerativeAI;
   onQuizCreated: (quizData: QuizData) => void;
 }
+
+const simplifiedABI = [
+  {
+    type: "function",
+    name: "createQuiz",
+    inputs: [
+      { name: "_name", type: "string" },
+      { name: "_tokenReward", type: "uint256" },
+      { name: "_takerLimit", type: "uint256" },
+      { name: "_startDate", type: "uint256" },
+      { name: "_endDate", type: "uint256" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "event",
+    name: "QuizCreated",
+    inputs: [
+      { name: "quizId", type: "uint256", indexed: true },
+      { name: "owner", type: "address", indexed: true },
+      { name: "name", type: "string", indexed: false },
+      { name: "tokenReward", type: "uint256", indexed: false },
+      { name: "takerLimit", type: "uint256", indexed: false },
+      { name: "startDate", type: "uint256", indexed: false },
+      { name: "endDate", type: "uint256", indexed: false },
+    ],
+    anonymous: false,
+  },
+];
 
 const QuizCreationPage: React.FC<QuizCreationPageProps> = ({
   genAI,
@@ -127,8 +156,7 @@ const QuizCreationPage: React.FC<QuizCreationPageProps> = ({
     );
     return creationFee + rewardSum;
   };
-
-  const generateContracts = () => {
+  const generateContracts = useMemo(() => {
     const totalCost = calculateTotalCost();
     const startTimestamp = new Date(quizData.startDate).getTime();
     const endTimestamp = new Date(quizData.endDate).getTime();
@@ -140,7 +168,7 @@ const QuizCreationPage: React.FC<QuizCreationPageProps> = ({
     return [
       {
         address: QUIZ_FACTORY_ADDRESS as `0x${string}`,
-        abi: QuizFactoryABI,
+        abi: simplifiedABI as Abi,
         functionName: "createQuiz",
         args: [
           quizData.name,
@@ -151,7 +179,7 @@ const QuizCreationPage: React.FC<QuizCreationPageProps> = ({
         ],
       },
     ] as const;
-  };
+  }, [quizData, calculateTotalCost]);
 
   const handleBlockchainError = (err: TransactionError) => {
     console.error("Blockchain transaction error:", err);
@@ -160,10 +188,33 @@ const QuizCreationPage: React.FC<QuizCreationPageProps> = ({
 
   const handleBlockchainSuccess = (response: TransactionResponse) => {
     console.log("Blockchain transaction successful", response);
-    // Extract quizId from the transaction response
-    const quizId = Number(response.logs[0].args?.quizId);
-    setBlockchainQuizId(quizId);
-    setIsBlockchainQuizCreated(true);
+    // Extract quizId from the QuizCreated event
+    let quizId: number | null = null;
+
+    for (const receipt of response.transactionReceipts) {
+      const quizCreatedEvent = receipt.logs.find(
+        (log) =>
+          log.topics[0] ===
+          simplifiedABI.find((item) => item.name === "QuizCreated")?.name
+      );
+
+      if (quizCreatedEvent && quizCreatedEvent.data) {
+        // Assuming the quizId is the first parameter in the event data
+        quizId = Number(quizCreatedEvent.topics[1]); // The indexed quizId should be in topics[1]
+        break; // Exit the loop once we find the event
+      }
+    }
+
+    if (quizId !== null) {
+      setBlockchainQuizId(quizId);
+      setIsBlockchainQuizCreated(true);
+      console.log("Quiz created with ID:", quizId);
+    } else {
+      console.error("QuizCreated event not found in transaction logs");
+      setError(
+        "Failed to extract quiz ID from transaction. Please check and try again."
+      );
+    }
   };
 
   const handleSubmit = async () => {
@@ -570,7 +621,9 @@ const QuizCreationPage: React.FC<QuizCreationPageProps> = ({
             {!isBlockchainQuizCreated ? (
               <Transaction
                 chainId={baseSepolia.id}
-                contracts={[...generateContracts()]}
+                contracts={
+                  generateContracts as unknown as ContractFunctionParameters[]
+                }
                 onError={handleBlockchainError}
                 onSuccess={handleBlockchainSuccess}
               >
