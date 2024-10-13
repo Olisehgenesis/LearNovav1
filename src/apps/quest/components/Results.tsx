@@ -1,5 +1,5 @@
 import React from "react";
-import { useQuizToken } from "../../token/hook/useQuizToken";
+// import { useQuizToken } from "../../token/hook/useQuizToken";
 import { QuizData } from "./shared-types";
 import {
   Transaction,
@@ -36,8 +36,6 @@ const Results: React.FC<ResultsProps> = ({
   quizData,
   onBackToList,
 }) => {
-  const { userAddress } = useQuizToken();
-
   const isPassed = results.score >= 80; // You might want to adjust this threshold
 
   const QUIZ_FACTORY_ADDRESS = "0x2e026c70E43d76aA00040ECD85601fF47917C157";

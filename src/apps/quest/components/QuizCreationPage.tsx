@@ -25,8 +25,7 @@ import type {
   TransactionError,
   TransactionResponse,
 } from "@coinbase/onchainkit/transaction";
-import type { ContractFunctionParameters } from "viem";
-import { formatEther, parseEther, decodeEventLog } from "viem";
+import { parseEther } from "viem";
 import { baseSepolia } from "wagmi/chains";
 import QuizFactoryABI from "../../token/contracts/abi/QuizFactoryABI.json";
 
@@ -571,7 +570,7 @@ const QuizCreationPage: React.FC<QuizCreationPageProps> = ({
             {!isBlockchainQuizCreated ? (
               <Transaction
                 chainId={baseSepolia.id}
-                contracts={generateContracts()}
+                contracts={[...generateContracts()]}
                 onError={handleBlockchainError}
                 onSuccess={handleBlockchainSuccess}
               >
