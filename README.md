@@ -90,6 +90,14 @@ Please note that some Base-specific features are not available in the current Se
 To get started with LearNova, you can claim a small amount of LNT tokens from our faucet. These tokens can be used to create quizzes or can be earned by completing quizzes. If the faucet is empty, you can still participate in quizzes to earn tokens.
 Faucet id found on claim page
 
+## Test the Application
+
+You can test the LearNova application by visiting:
+
+[https://learnova.on-fleek.app/](https://learnova.on-fleek.app/)
+
+Feel free to explore the features, create quizzes, and earn tokens on our platform!
+
 ## Contributing
 
 We welcome contributions to LearNova! If you'd like to contribute, please fork the repository and create a pull request with your changes. Here are some areas where contributions would be particularly helpful:
@@ -115,6 +123,6 @@ This project is currently running on the Sepolia testnet. While we aim to move t
 
 ## License
 
----
+MIT OPEN LICENCE
 
 For any questions or support, please open an issue in the GitHub repository: https://github.com/Olisehgenesis/LearNovav1
