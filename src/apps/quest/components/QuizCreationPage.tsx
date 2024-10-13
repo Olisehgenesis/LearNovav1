@@ -156,29 +156,32 @@ const QuizCreationPage: React.FC<QuizCreationPageProps> = ({
     );
     return creationFee + rewardSum;
   };
+
   const generateContracts = useMemo(() => {
-    const totalCost = calculateTotalCost();
-    const startTimestamp = new Date(quizData.startDate).getTime();
-    const endTimestamp = new Date(quizData.endDate).getTime();
+    return () => {
+      const totalCost = calculateTotalCost();
+      const startTimestamp = new Date(quizData.startDate).getTime();
+      const endTimestamp = new Date(quizData.endDate).getTime();
 
-    if (isNaN(totalCost) || isNaN(startTimestamp) || isNaN(endTimestamp)) {
-      throw new Error("Invalid quiz data. Please check all fields.");
-    }
+      if (isNaN(totalCost) || isNaN(startTimestamp) || isNaN(endTimestamp)) {
+        throw new Error("Invalid quiz data. Please check all fields.");
+      }
 
-    return [
-      {
-        address: QUIZ_FACTORY_ADDRESS as `0x${string}`,
-        abi: simplifiedABI as Abi,
-        functionName: "createQuiz",
-        args: [
-          quizData.name,
-          parseEther(totalCost.toString()), // Convert to wei
-          BigInt(1000), // Set taker limit to 0 (unlimited)
-          BigInt(Math.floor(startTimestamp / 1000)),
-          BigInt(Math.floor(endTimestamp / 1000)),
-        ],
-      },
-    ] as const;
+      return [
+        {
+          address: QUIZ_FACTORY_ADDRESS as `0x${string}`,
+          abi: simplifiedABI as Abi,
+          functionName: "createQuiz",
+          args: [
+            quizData.name,
+            parseEther(totalCost.toString()), // Convert to wei
+            BigInt(1000), // Set taker limit to 0 (unlimited)
+            BigInt(Math.floor(startTimestamp / 1000)),
+            BigInt(Math.floor(endTimestamp / 1000)),
+          ],
+        },
+      ] as const;
+    };
   }, [quizData, calculateTotalCost]);
 
   const handleBlockchainError = (err: TransactionError) => {
@@ -622,7 +625,7 @@ const QuizCreationPage: React.FC<QuizCreationPageProps> = ({
               <Transaction
                 chainId={baseSepolia.id}
                 contracts={
-                  generateContracts as unknown as ContractFunctionParameters[]
+                  generateContracts() as unknown as ContractFunctionParameters[]
                 }
                 onError={handleBlockchainError}
                 onSuccess={handleBlockchainSuccess}
